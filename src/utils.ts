@@ -101,9 +101,15 @@ export class request {
     if (opts.type && opts.type !== 'json') {
       throw new Error('this class only provides json requests')
     }
+    if (!opts.url) {
+      throw new Error('must provide url')
+    }
     this.opts = opts
     if (!this.opts.success) {
       this.opts.success = 200
+    }
+    if (!this.opts.method) {
+      this.opts.method = 'GET'
     }
     if (!this.opts.headers) {
       this.opts.headers = {}
@@ -111,6 +117,10 @@ export class request {
   }
   auth(token: string) {
     this.opts.headers.Authorization = `Bearer ${token}`
+    return this
+  }
+  basicAuth(username: string, password: string) {
+    this.opts.headers.Authorization = 'Basic ' + btoa(username + ':' + password)
     return this
   }
   body(body: Object) {
