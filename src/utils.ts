@@ -132,15 +132,19 @@ export class request {
     overrideBody,
     overrideSuccess,
   }: {
-    path: string
-    overrideBody: Object
-    overrideSuccess: number
-  }) {
+    path?: string
+    overrideBody?: Object
+    overrideSuccess?: number
+  } = {}) {
     if (this.opts.auth) {
       this.opts.headers.Authorization = `Bearer ${this.opts.auth}`
     }
     const body = overrideBody || this.opts.body
-    const res = await fetch(`${this.opts.url}${path}`, {
+    let url = this.opts.url
+    if (path) {
+      url = `${this.opts.url}${path}`
+    }
+    const res = await fetch(url, {
       method: this.opts.method,
       headers: {
         accept: 'application/json',
