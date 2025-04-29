@@ -20,22 +20,22 @@ type elOpts = {
 }
 export class el {
   el: HTMLElement | null
-  name: string
+  query: string
   constructor(opts: string | elOpts) {
+    this.query = ''
     if (typeof opts === 'string') {
-      this.name = opts
+      this.query = opts
       this.el = document.querySelector(opts)
       return
     }
     const { query, type, content, parent, create } = opts as elOpts
     if (query) {
-      this.name = query
+      this.query = query
       this.el = document.querySelector(query)
       if (!this.el && type && create) {
         this.el = document.createElement(type)
       }
     } else if (type) {
-      this.name = type
       this.el = document.createElement(type)
     } else {
       throw new Error('no query or type provided')
@@ -57,14 +57,14 @@ export class el {
   /*** set ***/
   parent(parent: HTMLElement) {
     if (!this.el) {
-      throw new Error(`no element from input: ${this.name}`)
+      throw new Error(`no element from query: ${this.query}`)
     }
     parent.appendChild(this.el)
     return this
   }
   child(ch: HTMLElement) {
     if (!this.el) {
-      throw new Error(`no element from input: ${this.name}`)
+      throw new Error(`no element from query: ${this.query}`)
     }
     this.el?.appendChild(ch)
     return this
@@ -74,7 +74,7 @@ export class el {
     { force = false, text = false }: { force?: boolean; text?: boolean } = {},
   ) {
     if (!this.el) {
-      throw new Error(`no element from input: ${this.name}`)
+      throw new Error(`no element from query: ${this.query}`)
     }
     if (this.el instanceof HTMLIFrameElement && !force) {
       this.el.src = content
@@ -112,14 +112,14 @@ export class el {
   }
   addClass(className: string) {
     if (!this.el) {
-      throw new Error(`no element from input: ${this.name}`)
+      throw new Error(`no element from query: ${this.query}`)
     }
     this.el.classList.add(className)
     return this
   }
   removeClass(className: string) {
     if (!this.el) {
-      throw new Error(`no element from input: ${this.name}`)
+      throw new Error(`no element from query: ${this.query}`)
     }
     this.el.classList.remove(className)
     return this
@@ -127,44 +127,12 @@ export class el {
 
   listen(event: string, cb: (ev: Event) => void) {
     if (!this.el) {
-      throw new Error(`no element from input: ${this.name}`)
+      throw new Error(`no element from query: ${this.query}`)
     }
     this.el.addEventListener(event, cb)
     return this
   }
   onClick(cb: (ev: Event) => void) {
     return this.listen('click', cb)
-  }
-}
-
-/*** url params ***/
-export class params {
-  params: URLSearchParams
-  constructor(p?: Object) {
-    this.params = new URLSearchParams()
-    if (p) {
-      for (let [k, v] of Object.entries(p)) {
-        this.params.set(k, v)
-      }
-    }
-    return this
-  }
-  set(p: Object) {
-    for (let [k, v] of Object.entries(p)) {
-      this.params.set(k, v)
-    }
-    return this
-  }
-  toString(): string {
-    return this.params.toString()
-  }
-  static render(p: Object) {
-    const params = new URLSearchParams()
-    if (p) {
-      for (let [k, v] of Object.entries(p)) {
-        params.set(k, v)
-      }
-    }
-    return params.toString()
   }
 }
