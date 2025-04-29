@@ -15,7 +15,7 @@ type elOpts = {
   query?: string
   type?: string
   content?: any
-  parent?: HTMLElement
+  parent?: HTMLElement | el
   create?: boolean
 }
 export class el {
@@ -55,18 +55,26 @@ export class el {
     return ''
   }
   /*** set ***/
-  parent(parent: HTMLElement) {
+  parent(parent: HTMLElement | el) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
     parent.appendChild(this.el)
     return this
   }
-  child(ch: HTMLElement) {
+  // For compatibility, should use child
+  appendChild(ch: HTMLElement | el) {
+    this.child(ch)
+  }
+  child(ch: HTMLElement | el) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
-    this.el?.appendChild(ch)
+    if (ch instanceof el) {
+      this.el.appendChild(ch!.el!)
+    } else {
+      this.el.appendChild(ch)
+    }
     return this
   }
   inner(
