@@ -1,77 +1,95 @@
-/***************
- *    DOM      *
+/****************
+ *     DOM      *
  ***************/
+
+/*** window ***/
+/**
+ * onDomContentLoaded
+ */
 export function ready(cb: () => void) {
   window.addEventListener('DOMContentLoaded', cb)
 }
 
-export class btn {
-  el: Element | null
-  constructor(id: string, content: string) {
-    this.el = null
-    if (id) {
-      this.el = document.getElementById(id)
-      if (this.el && content) {
-        this.el.innerHTML = content
-      }
-    }
-  }
-  onClick(cb: (ev: Event) => void) {
-    this.el?.addEventListener('click', cb)
-  }
-}
-export class form {
-  el: Element | null
-  constructor(id: string) {
-    this.el = null
-    if (id) {
-      this.el = document.getElementById(id)
-    }
-  }
-  byID(id: string) {
-    this.el = document.getElementById(id)
-    return this
-  }
-  onChange(cb: (ev: Event) => void) {
-    this.el?.addEventListener('change', cb)
-  }
+/*** element ***/
+type elOpts = {
+  query?: string
+  type?: string
+  content?: any
+  parent?: HTMLElement
+  create?: boolean
 }
 export class el {
   el: HTMLElement | null
-  constructor({
-    id,
-    type,
-    content,
-  }: {
-    id: string
-    type: string
-    content?: any
-  }) {
-    if (id) {
-      this.el = document.getElementById(id)
+  constructor(opts: string | elOpts) {
+    if (typeof opts === 'string') {
+      this.el = document.querySelector(opts)
+      return
+    }
+    const { query, type, content, parent, create } = opts as elOpts
+    if (query) {
+      this.el = document.querySelector(query)
+      if (!this.el && type && create) {
+        this.el = document.createElement(type)
+      }
     } else if (type) {
       this.el = document.createElement(type)
     } else {
-      throw new Error('no id or type provided')
+      throw new Error('no query or type provided')
     }
     if (this.el && content) {
       this.el.innerHTML = content
     }
+    if (this.el && parent) {
+      parent.appendChild(this.el)
+    }
+  }
+  /*** get ***/
+  value(): string {
+    if (this.el && this.el instanceof HTMLInputElement) {
+      return this.el.value
+    }
+    return ''
+  }
+  /*** set ***/
+  parent(parent: HTMLElement) {
+    if (!this.el) {
+      throw new Error('no element')
+    }
+    parent.appendChild(this.el)
+    return this
   }
   child(ch: HTMLElement) {
+    if (!this.el) {
+      throw new Error('no element')
+    }
     this.el?.appendChild(ch)
     return this
   }
-  // TODO: check if should use value or innerHTML
-  inner(content: any) {
-    if (this.el) {
-      this.el.innerHTML = content
+  inner(
+    content: any,
+    { force = false, text = false }: { force?: boolean; text?: boolean } = {},
+  ) {
+    if (!this.el) {
+      throw new Error('no element')
+    }
+    if (this.el instanceof HTMLIFrameElement && !force) {
+      this.el.src = content
+    } else if (this.el instanceof HTMLInputElement && !force) {
+      this.el.value = content
+    } else {
+      if (text) {
+        this.el.textContent = content
+      } else {
+        this.el.innerHTML = content
+      }
     }
     return this
   }
   src(url: string) {
-    // TODO: check img blah blah
-    if (this.el instanceof HTMLIFrameElement) {
+    if (
+      this.el instanceof HTMLIFrameElement ||
+      this.el instanceof HTMLImageElement
+    ) {
       this.el.src = url
     }
     return this
@@ -88,20 +106,29 @@ export class el {
     }
     return this
   }
-  onClick(cb: (ev: Event) => void) {
-    this.el?.addEventListener('click', cb)
+  listen(event: string, cb: (ev: Event) => void) {
+    if (!this.el) {
+      throw new Error('no element')
+    }
+    this.el.addEventListener(event, cb)
     return this
   }
-  listen(event: string, cb: (ev: Event) => void) {
-    this.el?.addEventListener(event, cb)
-    return this
+  onClick(cb: (ev: Event) => void) {
+    return this.listen('click', cb)
   }
 }
 
+/*** url params ***/
 export class params {
   params: URLSearchParams
-  constructor() {
+  constructor(p?: Object) {
     this.params = new URLSearchParams()
+    if (p) {
+      for (let [k, v] of Object.entries(p)) {
+        this.params.set(k, v)
+      }
+    }
+    return this
   }
   set(p: Object) {
     for (let [k, v] of Object.entries(p)) {
@@ -112,13 +139,13 @@ export class params {
   toString(): string {
     return this.params.toString()
   }
-}
-
-export const ls = {
-  get(k: string) {
-    return localStorage.getItem(k)
-  },
-  set(k: string, v: any) {
-    localStorage.setItem(k, v)
-  },
+  static render(p: Object) {
+    const params = new URLSearchParams()
+    if (p) {
+      for (let [k, v] of Object.entries(p)) {
+        params.set(k, v)
+      }
+    }
+    return params.toString()
+  }
 }

@@ -1,3 +1,5 @@
 export * as dom from './dom'
 export * as style from './style'
-export * as utils from './utils'
+export * as network from './network'
+export * as ls from './local_storage'
+export * from './utils'

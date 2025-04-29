@@ -5,20 +5,23 @@
 /**
  * Converts bytes to a human-readable string representation
  *
- * @param {number} bytes - The number of bytes to convert
- * @param {Object} options - Optional configuration
- * @param {boolean} options.useSI - If true, use SI units (KB, MB, GB) with powers of 1000
+ * @param bytes - The number of bytes to convert
+ * @param options - Optional configuration
+ * @param options.useSI - If true, use SI units (KB, MB, GB) with powers of 1000
  *                                 If false, use binary units (KiB, MiB, GiB) with powers of 1024
- * @param {number} options.decimals - Number of decimal places to include (default: 2)
- * @return {string} Human-readable representation (e.g., "4.2 MB" or "3.7 GiB")
+ * @param options.decimals - Number of decimal places to include (default: 2)
+ * @return Human-readable representation (e.g., "4.2 MB" or "3.7 GiB")
  */
-export type Options = {
+export type bytesOptions = {
   useSI?: boolean
   decimals?: number
   includeUnits?: boolean
   targetUnit?: string
 }
-export function bytesToHuman(bytes: string, options: Options = {}) {
+export function bytesToHuman(
+  bytes: string,
+  options: bytesOptions = {},
+): string {
   const {
     useSI = false,
     decimals = 2,
@@ -84,82 +87,4 @@ export function genID(
   return [...crypto.getRandomValues(new Uint8Array(len))]
     .map((value) => alphabet[Math.floor((value / 255) * alphabet.length)])
     .join('')
-}
-
-export type RequestOptions = {
-  url: string
-  type: 'json'
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
-  headers: Record<string, string>
-  auth: string
-  body: Object
-  success: number
-}
-export class request {
-  opts: RequestOptions
-  constructor(opts: RequestOptions) {
-    if (opts.type && opts.type !== 'json') {
-      throw new Error('this class only provides json requests')
-    }
-    if (!opts.url) {
-      throw new Error('must provide url')
-    }
-    this.opts = opts
-    if (!this.opts.success) {
-      this.opts.success = 200
-    }
-    if (!this.opts.method) {
-      this.opts.method = 'GET'
-    }
-    if (!this.opts.headers) {
-      this.opts.headers = {}
-    }
-  }
-  auth(token: string) {
-    this.opts.headers.Authorization = `Bearer ${token}`
-    return this
-  }
-  basicAuth(username: string, password: string) {
-    this.opts.headers.Authorization = 'Basic ' + btoa(username + ':' + password)
-    return this
-  }
-  body(body: Object) {
-    this.opts.body = body
-    return this
-  }
-  async do({
-    path,
-    overrideBody,
-    overrideSuccess,
-  }: {
-    path?: string
-    overrideBody?: Object
-    overrideSuccess?: number
-  } = {}) {
-    if (this.opts.auth) {
-      this.opts.headers.Authorization = `Bearer ${this.opts.auth}`
-    }
-    const body = overrideBody || this.opts.body
-    let url = this.opts.url
-    if (path) {
-      url = `${this.opts.url}${path}`
-    }
-    const res = await fetch(url, {
-      method: this.opts.method,
-      headers: {
-        accept: 'application/json',
-        'content-type': 'application/json',
-        ...this.opts.headers,
-      },
-      body: JSON.stringify(body),
-    })
-    const success = overrideSuccess || this.opts.success
-    if (res.status !== success) {
-      const body = await res.json()
-      throw new Error(
-        `bad response ${res.status} !== ${this.opts.success}, body: ${body}`,
-      )
-    }
-    return await res.json()
-  }
 }
