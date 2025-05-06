@@ -1,10 +1,12 @@
+import { logger, logLevel } from './utils'
 /****************
  *     DOM      *
  ***************/
 
 /*** window ***/
+
 /**
- * onDomContentLoaded
+ * onDomContentLoaded callback
  */
 export function ready(cb: () => void) {
   window.addEventListener('DOMContentLoaded', cb)
@@ -15,46 +17,78 @@ type elOpts = {
   query?: string
   type?: string
   content?: any
+  class?: string
+  id?: string
   parent?: HTMLElement | el
-  create?: boolean
 }
 export class el {
   el: HTMLElement | null
   query: string
-  constructor(opts: string | elOpts) {
+  log: logger
+  constructor(opts: string | elOpts, verbose: boolean = false) {
+    this.log = new logger(verbose ? logLevel.debug : logLevel.none, 'element')
     this.query = ''
     if (typeof opts === 'string') {
       this.query = opts
       this.el = document.querySelector(opts)
       return
     }
-    const { query, type, content, parent, create } = opts as elOpts
+    const {
+      query,
+      type,
+      class: styleClass,
+      id,
+      content,
+      parent,
+    } = opts as elOpts
     if (query) {
       this.query = query
       this.el = document.querySelector(query)
-      if (!this.el && type && create) {
-        this.el = document.createElement(type)
+      if (!this.el) {
+        throw new Error(`no element from query: ${query}`)
       }
     } else if (type) {
       this.el = document.createElement(type)
     } else {
       throw new Error('no query or type provided')
     }
-    if (this.el && content) {
-      this.el.innerHTML = content
-    }
-    if (this.el && parent) {
-      parent.appendChild(this.el)
+    if (this.el) {
+      if (id) {
+        this.el.id = id
+      }
+      if (styleClass) {
+        this.el.classList.add(styleClass)
+      }
+      if (content) {
+        this.el.innerHTML = content
+      }
+      if (parent) {
+        parent.appendChild(this.el)
+      }
     }
   }
-  /*** get ***/
-  value(): string {
-    if (this.el && this.el instanceof HTMLInputElement) {
-      return this.el.value
+  /*** dom manipulation ***/
+  value(update?: string): string | el {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
     }
+    if (update) {
+      if ('value' in this.el) {
+        this.el.value = update
+      }
+      if ('src' in this.el) {
+        this.el.src = update
+      }
+      return this
+    }
+    if ('value' in this.el) {
+      return (this.el as { value: string }).value
+    }
+    this.log.warn(
+      `element (${this.query}) does not contain value, returning empty string`,
+    )
     return ''
   }
-  /*** set ***/
   parent(parent: HTMLElement | el) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
@@ -64,7 +98,7 @@ export class el {
   }
   // For compatibility, should use child
   appendChild(ch: HTMLElement | el) {
-    this.child(ch)
+    return this.child(ch)
   }
   child(ch: HTMLElement | el) {
     if (!this.el) {
@@ -77,35 +111,31 @@ export class el {
     }
     return this
   }
-  inner(
-    content: any,
-    { force = false, text = false }: { force?: boolean; text?: boolean } = {},
-  ) {
+  empty() {
+    if (this.el) {
+      this.el.innerHTML = ''
+    }
+    return this
+  }
+  content(content: any, { text = false }: { text?: boolean } = {}) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
-    if (this.el instanceof HTMLIFrameElement && !force) {
-      this.el.src = content
-    } else if (this.el instanceof HTMLInputElement && !force) {
-      this.el.value = content
+    if (text) {
+      this.el.textContent = content
     } else {
-      if (text) {
-        this.el.textContent = content
-      } else {
-        this.el.innerHTML = content
-      }
+      this.el.innerHTML = content
     }
     return this
   }
   src(url: string) {
-    if (
-      this.el instanceof HTMLIFrameElement ||
-      this.el instanceof HTMLImageElement
-    ) {
+    if (this.el && 'src' in this.el) {
       this.el.src = url
     }
     return this
   }
+
+  /*** Style ***/
   style(style: Object | string) {
     if (this.el) {
       if (typeof style === 'string') {
@@ -133,6 +163,7 @@ export class el {
     return this
   }
 
+  /*** Events ***/
   listen(event: string, cb: (ev: Event) => void) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)

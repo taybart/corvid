@@ -2,6 +2,14 @@
  *    Utils    *
  **************/
 
+export async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch (err) {
+    console.error('Failed to copy to clipboard:', err)
+  }
+}
+
 /**
  * Converts bytes to a human-readable string representation
  *
@@ -87,4 +95,50 @@ export function genID(
   return [...crypto.getRandomValues(new Uint8Array(len))]
     .map((value) => alphabet[Math.floor((value / 255) * alphabet.length)])
     .join('')
+}
+
+export enum logLevel {
+  none = -1,
+  error = 0,
+  warn = 1,
+  info = 2,
+  debug = 3,
+  trace = 4,
+}
+
+export class logger {
+  level: logLevel
+  prefix: string
+  constructor(level: logLevel = logLevel.info, prefix?: string) {
+    this.level = level
+    this.prefix = prefix ? `(${prefix}):` : ':'
+  }
+  error(...args: any[]) {
+    if (this.level >= logLevel.error) {
+      console.error(`[corvid] ${this.prefix}`, ...args)
+    }
+  }
+  warn(...args: any[]) {
+    if (this.level >= logLevel.warn) {
+      console.warn(`[corvid] ${this.prefix}`, ...args)
+    }
+  }
+  info(...args: any[]) {
+    if (this.level >= logLevel.info) {
+      console.info(`[corvid] ${this.prefix}`, ...args)
+    }
+  }
+  debug(...args: any[]) {
+    if (this.level >= logLevel.debug) {
+      console.debug(`[corvid] ${this.prefix}`, ...args)
+    }
+  }
+  trace(...args: any[]) {
+    if (this.level >= logLevel.trace) {
+      console.trace(`[corvid] ${this.prefix}`, ...args)
+    }
+  }
+  log(...args: any[]) {
+    console.log(`[corvid] ${this.prefix}`, ...args)
+  }
 }

@@ -1,3 +1,5 @@
+import { logger, logLevel } from './utils'
+
 /*** url params ***/
 export class params {
   params: URLSearchParams
@@ -30,6 +32,7 @@ export class params {
   }
 }
 
+/*** http request ***/
 export type requestOpts = {
   url?: string
   type?: 'json'
@@ -39,10 +42,13 @@ export type requestOpts = {
   auth?: string
   body?: Object
   success?: number
+  credentials?: RequestCredentials
 }
 export class request {
   opts: requestOpts
-  constructor(opts: requestOpts = {}) {
+  log: logger
+  constructor(opts: requestOpts = {}, verbose: boolean = false) {
+    this.log = new logger(verbose ? logLevel.debug : logLevel.none, 'request')
     if (opts.type && opts.type !== 'json') {
       throw new Error('this class only provides json requests')
     }
@@ -60,14 +66,21 @@ export class request {
     if (!this.opts.headers) {
       this.opts.headers = {}
     }
+    if (!this.opts.credentials) {
+      this.opts.credentials = 'omit'
+    }
+    this.log.debug(`with options: ${JSON.stringify(this.opts)}`)
   }
   auth(token: string) {
-    this.opts.headers!.Authorization = `Bearer ${token}`
+    const header = `Bearer ${token}`
+    this.log.debug(`adding auth token header ${header}`)
+    this.opts.headers!.Authorization = header
     return this
   }
   basicAuth(username: string, password: string) {
-    this.opts.headers!.Authorization =
-      'Basic ' + btoa(username + ':' + password)
+    const header = `Basic ${btoa(`${username}:${password}`)}`
+    this.log.debug(`adding basic auth header ${header}`)
+    this.opts.headers!.Authorization = header
     return this
   }
   body(body: Object) {
@@ -100,8 +113,10 @@ export class request {
     if (params) {
       url = `${url}?${params.toString()}`
     }
+    this.log.debug(`${this.opts.method} ${url}`)
     const res = await fetch(url, {
       method: this.opts.method,
+      credentials: this.opts.credentials,
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
@@ -119,3 +134,142 @@ export class request {
     return await res.json()
   }
 }
+
+/*** websocket ***/
+export class ws {
+  url: string
+  ws: WebSocket | null
+  backoff = 50 // exponential backoff
+  max_timeout = 10000 // 10 seconds
+  should_reconnect = true
+  is_connected = false
+  recursion_level = 0
+  log: logger
+  event_listeners: Record<string, Array<(data: any) => void>> = {}
+  constructor(url: string, verbose: boolean = false) {
+    this.url = url
+    this.ws = null
+    this.log = new logger(verbose ? logLevel.debug : logLevel.none, 'websocket')
+    this.setup()
+  }
+  setup() {
+    this.recursion_level += 1
+    this.ws = new WebSocket(this.url)
+    this.backoff = 100
+    this.ws.addEventListener('open', () => {
+      const rl = this.recursion_level
+      this.log.debug(`on open: reconnected (${rl})`)
+      this.is_connected = true
+      for (let key in this.event_listeners) {
+        this.event_listeners[key].forEach((cb) => {
+          this.log.debug(`adding listener (${rl}): ${key}`)
+          this.ws!.addEventListener(key, cb)
+        })
+      }
+    })
+    this.ws.addEventListener('close', () => {
+      this.log.debug('connection closed')
+
+      this.is_connected = false
+      this.backoff = Math.min(this.backoff * 2, this.max_timeout)
+      this.log.debug('backoff: ' + this.backoff)
+      setTimeout(
+        () => {
+          if (this.should_reconnect) {
+            this.ws = null
+            this.setup()
+          }
+        },
+        this.backoff + 50 * Math.random(), // add jitter to avoid thundering herd
+      )
+    })
+  }
+  send(data: any) {
+    if (!this.is_connected || !this.ws) {
+      throw new Error('not connected')
+    }
+    this.ws.send(data)
+  }
+  onMessage(cb: (data: any) => void) {
+    if (!this.ws) {
+      throw new Error('ws is null')
+    }
+    if (!this.event_listeners.message) {
+      this.event_listeners.message = []
+    }
+    this.event_listeners.message.push((e) => {
+      const rl = this.recursion_level
+      this.log.debug(`message(${rl}): ${e.data}`)
+      cb(e.data)
+    })
+    this.ws.addEventListener('message', (e) => {
+      const rl = this.recursion_level
+      this.log.debug(`message(${rl}): ${e.data}`)
+      cb(e.data)
+    })
+  }
+  on(event: string, cb: (data: any) => void) {
+    if (!this.ws) {
+      throw new Error('ws is null')
+    }
+    if (!this.event_listeners[event]) {
+      this.event_listeners[event] = []
+    }
+    this.event_listeners[event].push(cb)
+    this.ws.addEventListener(event, cb)
+  }
+  close() {
+    if (!this.is_connected || !this.ws) {
+      return
+    }
+    this.should_reconnect = false
+    this.ws.close()
+  }
+}
+
+/*** refresh ***/
+export class refresh {
+  url: string
+  should_reload = false
+  constructor(url: string) {
+    this.url = url
+  }
+  listen() {
+    const socket = new ws(this.url)
+    if (socket) {
+      socket.on('open', () => {
+        if (this.should_reload) {
+          location.reload()
+        }
+      })
+      socket.on('close', () => {
+        this.should_reload = true
+        setTimeout(this.listen, 500)
+      })
+    }
+  }
+}
+
+/*** server sent events ***/
+// export class sse {
+//   sse: EventSource
+//   constructor(url: string, withCredentials = false) {
+//     this.sse = new EventSource(url, { withCredentials })
+//     if (this.sse) {
+//       this.on('close', () => {
+//         console.log('connection closed')
+//       })
+//     }
+//   }
+//   event(cb: (data: any) => void) {
+//     this.sse.addEventListener('message', (e) => {
+//       cb(e.data)
+//     })
+//   }
+//   on(event: string, cb: (data: any) => void) {
+//     this.sse.addEventListener(event, cb)
+//   }
+//   close() {
+//     this.sse.close()
+//   }
+// }
