@@ -1,0 +1,37 @@
+/* screen size */
+/* big */
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 60rem;
+  margin: 0 auto;
+  margin-top: 5em;
+}
+
+/* small */
+@media screen and (max-width: 50em) {
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 2em;
+  }
+}
+
+/* light/dark */
+:root {
+  /* prevent flashbangs before theme is loaded */
+  --bg-color: #1e2227;
+}
+
+[data-theme='light'] {
+  --bg-color: #ffffff;
+  --bg-light-color: #bebebe;
+  --fg-color: #1e2227;
+}
+[data-theme='dark'] {
+  --bg-color: #1e2227;
+  --bg-light-color: #2a2f35;
+  --fg-color: #ffffff;
+}
