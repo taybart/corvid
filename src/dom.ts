@@ -73,6 +73,7 @@ export class el {
       this.log.debug(`using existing element: ${element}`)
       this.el = element
     } else if (type) {
+      this.query = type
       this.log.debug(`creating element: ${type}`)
       this.el = document.createElement(type)
     } else {
@@ -115,6 +116,12 @@ export class el {
     }
     if ('value' in this.el) {
       return (this.el as { value: string }).value
+    }
+    if ('innerText' in this.el) {
+      return (this.el as { innerText: string }).innerText
+    }
+    if ('innerHTML' in this.el) {
+      return (this.el as { innerHTML: string }).innerHTML
     }
     this.log.warn(
       `element (${this.query}) does not contain value, returning empty string`,
@@ -205,8 +212,5 @@ export class el {
   }
   listen(event: string, cb: (ev: Event) => void) {
     return this.on(event, cb)
-  }
-  onClick(cb: (ev: Event) => void) {
-    return this.on('click', cb)
   }
 }
