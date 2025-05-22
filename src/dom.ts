@@ -34,6 +34,12 @@ export function onKey(
   })
 }
 
+export function els(query: string, verbose: boolean = false) {
+  return Array.from(document.querySelectorAll(query)).map((n) => {
+    return new el(n, verbose)
+  })
+}
+
 /*** element ***/
 type elOpts = {
   element?: HTMLElement
@@ -57,6 +63,11 @@ export class el {
     if (typeof opts === 'string') {
       this.query = opts
       this.el = document.querySelector(opts)
+      return
+    }
+    if (opts instanceof HTMLElement) {
+      this.log.debug(`using existing element: ${opts}`)
+      this.el = opts
       return
     }
     // prettier-ignore
@@ -188,6 +199,12 @@ export class el {
     }
     return this
   }
+  hasClass(className: string) {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    return this.el.classList.contains(className)
+  }
   addClass(className: string) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
@@ -259,7 +276,10 @@ export class el {
  * @return The interpolated string
  */
 export function interpolate(str: string, params: Object): string {
-  let names = Object.keys(params)
+  let names = Object.keys(params).map((k) => `_${k}`)
   let vals = Object.values(params)
-  return new Function(...names, `return \`${str}\`;`)(...vals)
+  return new Function(
+    ...names,
+    `return \`${str.replace(/\$\{(\w*)\}/g, '${_$1}')}\`;`,
+  )(...vals)
 }
