@@ -49,6 +49,7 @@ export class el {
   el: HTMLElement | null
   query = ''
   log: logger
+  listeners: Record<string, Array<(ev: Event) => void>> = {}
   constructor(opts: HTMLElement | string | elOpts, verbose: boolean = false) {
     this.log = new logger(verbose ? logLevel.debug : logLevel.none, 'element')
 
@@ -105,7 +106,7 @@ export class el {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
-    if (update) {
+    if (update !== undefined) {
       if ('value' in this.el) {
         this.el.value = update
       }
@@ -201,16 +202,64 @@ export class el {
     this.el.classList.remove(className)
     return this
   }
+  /*** Templates ***/
+  render(vars = {}) {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    try {
+      return interpolate(this.el.innerHTML, vars)
+    } catch (e) {
+      throw new Error(`could not render template ${this.query}: ${e}`)
+    }
+  }
+  appendTemplate(template: el, vars: any) {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    if (!template.el) {
+      throw new Error(`template does not contain element`)
+    }
+    const tmpl = template.render(vars)
+    this.el.insertAdjacentHTML('beforeend', tmpl)
+  }
 
   /*** Events ***/
   on(event: string, cb: (ev: Event) => void) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
+    if (!this.listeners[event]) {
+      this.listeners[event] = []
+    }
+    this.listeners[event].push(cb)
     this.el.addEventListener(event, cb)
     return this
   }
   listen(event: string, cb: (ev: Event) => void) {
     return this.on(event, cb)
   }
+  removeListeners(event: string) {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    for (const cb of this.listeners[event]) {
+      this.el.removeEventListener(event, cb)
+    }
+    this.listeners[event] = []
+    return this
+  }
+}
+
+/**
+ * Get a template from a string
+ * https://stackoverflow.com/a/41015840
+ * @param  str    The string to interpolate
+ * @param  params The parameters
+ * @return The interpolated string
+ */
+export function interpolate(str: string, params: Object): string {
+  let names = Object.keys(params)
+  let vals = Object.values(params)
+  return new Function(...names, `return \`${str}\`;`)(...vals)
 }

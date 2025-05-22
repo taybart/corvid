@@ -1,4 +1,4 @@
-import { defineConfig } from '@rslib/core';
+import { defineConfig } from '@rslib/core'
 
 export default defineConfig({
   lib: [
@@ -8,4 +8,7 @@ export default defineConfig({
       dts: true,
     },
   ],
-});
+  output: {
+    target: 'web',
+  },
+})

@@ -35,6 +35,16 @@ export function switchTheme(theme: string) {
 }
 
 /**
+ * Listen for changes in the dark mode preference
+ */
+export function handleThemeSwitch() {
+  switchTheme(isDarkMode() ? 'dark' : 'light')
+  onDarkMode((dark) => {
+    switchTheme(dark ? 'dark' : 'light')
+  })
+}
+
+/**
  * Calculate a color gradient
  * @param start - The starting color
  * @param end - The ending color

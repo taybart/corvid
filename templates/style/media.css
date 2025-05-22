@@ -35,3 +35,9 @@ main {
   --bg-light-color: #2a2f35;
   --fg-color: #ffffff;
 }
+
+html {
+  background-color: var(--bg-color);
+  color: var(--fg-color);
+  font-family: sans-serif;
+}

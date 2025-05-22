@@ -39,6 +39,18 @@ dom.ready(() => {
     dom.onKey('E', ({ ctrl, alt, meta, shift }) => {
         console.log('E pressed')
     })
+
+    /*
+     * Given a template:
+     * <template id="tmpl-test">
+     *  <div> hello ${name} </div>
+     * </template>
+     */
+     const tmpl = new dom.el('#tmpl-test')
+     // append template to el
+     username.appendTemplate(tmpl, { name: 'corvid' })
+     // or just set content
+     document.body.innerHTML = tmpl.render({ name: 'corvid' })
 })
 ```
 

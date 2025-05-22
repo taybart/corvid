@@ -4,6 +4,21 @@ import { el } from './dom'
 export function get(key: string): any {
   return localStorage.getItem(key)
 }
+export function update(
+  key: string,
+  update: (current: any) => any,
+  broadcast: boolean = false,
+) {
+  const prev = get(key)
+  const value = update(prev)
+  if (prev !== value || broadcast) {
+    const event = new CustomEvent('@corvid/ls-update', {
+      detail: { key, value },
+    })
+    document.dispatchEvent(event)
+  }
+  localStorage.setItem(key, value)
+}
 export function set(
   key: string | object,
   value: any,
