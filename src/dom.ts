@@ -1,4 +1,4 @@
-import { toKebab } from './strings'
+import * as style from './style'
 import { logger, logLevel } from './utils'
 /****************
  *     DOM      *
@@ -187,13 +187,20 @@ export class el {
   }
 
   /*** Style ***/
-  style(style: Object | string) {
+  style(update: Object | string, stringify = false) {
     if (this.el) {
-      if (typeof style === 'string') {
-        this.el.style = style
-      } else if (typeof style === 'object') {
-        let s = ''
-        Object.entries(style).forEach(([k, v]) => (s += `${toKebab(k)}:${v};`))
+      if (typeof update === 'string') {
+        this.el.style = update
+      } else if (typeof update === 'object') {
+        if (!stringify) {
+          for (const [k, v] of Object.entries(update)) {
+            // @ts-ignore
+            this.el.style[k] = v
+          }
+          return
+        }
+        const s = style.render(update)
+        this.log.debug(`set style: ${this.el.style} -> ${s}`)
         this.el.style = s
       }
     }
@@ -230,6 +237,7 @@ export class el {
       throw new Error(`could not render template ${this.query}: ${e}`)
     }
   }
+  // TODO: maybe should return first node in template as el
   appendTemplate(template: el, vars: any) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)

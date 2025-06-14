@@ -2,9 +2,17 @@
  *    Style    *
  **************/
 
+import { toKebab } from './strings'
+
 export function cssVar(name: string) {
   const style = window.getComputedStyle(document.body)
   return style.getPropertyValue(name)
+}
+
+export function render(style: Object): string {
+  let s = ''
+  Object.entries(style).forEach(([k, v]) => (s += `${toKebab(k)}:${v};`))
+  return s
 }
 
 /**

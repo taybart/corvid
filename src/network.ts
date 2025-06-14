@@ -139,11 +139,12 @@ export class request {
 export class ws {
   url: string
   ws: WebSocket | null
-  backoff = 50 // exponential backoff
+  backoff = 100 // exponential backoff
   max_timeout = 10000 // 10 seconds
   should_reconnect = true
   is_connected = false
   recursion_level = 0
+  reconnect_timer: number | null = null
   log: logger
   event_listeners: Record<string, Array<(data: any) => void>> = {}
   constructor(url: string, verbose: boolean = false) {
@@ -154,16 +155,28 @@ export class ws {
   }
   setup() {
     this.recursion_level += 1
+    if (this.ws) {
+      for (let key in this.event_listeners) {
+        this.event_listeners[key].forEach((cb) => {
+          this.ws!.removeEventListener(key, cb)
+        })
+      }
+    }
     this.ws = new WebSocket(this.url)
     this.backoff = 100
     this.ws.addEventListener('open', () => {
       const rl = this.recursion_level
       this.log.debug(`on open: reconnected (${rl})`)
       this.is_connected = true
+
+      if (!this.ws) return
+
       for (let key in this.event_listeners) {
         this.event_listeners[key].forEach((cb) => {
-          this.log.debug(`adding listener (${rl}): ${key}`)
-          this.ws!.addEventListener(key, cb)
+          if (this.ws) {
+            this.log.debug(`adding listener (${rl}): ${key}`)
+            this.ws.addEventListener(key, cb)
+          }
         })
       }
     })
@@ -172,8 +185,8 @@ export class ws {
 
       this.is_connected = false
       this.backoff = Math.min(this.backoff * 2, this.max_timeout)
-      this.log.debug('backoff: ' + this.backoff)
-      setTimeout(
+      this.log.debug(`backoff: ${this.backoff}`)
+      this.reconnect_timer = window.setTimeout(
         () => {
           if (this.should_reconnect) {
             this.ws = null
@@ -183,12 +196,13 @@ export class ws {
         this.backoff + 50 * Math.random(), // add jitter to avoid thundering herd
       )
     })
+    this.ws.addEventListener('error', this.log.error)
   }
   send(data: any) {
     if (!this.is_connected || !this.ws) {
       throw new Error('not connected')
     }
-    this.ws.send(data)
+    this.ws.send(JSON.stringify(data))
   }
   onMessage(cb: (data: any) => void) {
     if (!this.ws) {
@@ -197,16 +211,16 @@ export class ws {
     if (!this.event_listeners.message) {
       this.event_listeners.message = []
     }
-    this.event_listeners.message.push((e) => {
+    const handler = (e: MessageEvent) => {
       const rl = this.recursion_level
       this.log.debug(`message(${rl}): ${e.data}`)
       cb(e.data)
-    })
-    this.ws.addEventListener('message', (e) => {
-      const rl = this.recursion_level
-      this.log.debug(`message(${rl}): ${e.data}`)
-      cb(e.data)
-    })
+    }
+    this.event_listeners.message.push(handler)
+    this.ws.addEventListener('message', handler)
+  }
+  onJSON(cb: (data: any) => void) {
+    this.onMessage((d) => cb(JSON.parse(d)))
   }
   on(event: string, cb: (data: any) => void) {
     if (!this.ws) {
@@ -219,6 +233,9 @@ export class ws {
     this.ws.addEventListener(event, cb)
   }
   close() {
+    if (this.reconnect_timer) {
+      clearTimeout(this.reconnect_timer)
+    }
     if (!this.is_connected || !this.ws) {
       return
     }

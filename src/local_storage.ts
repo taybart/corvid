@@ -1,8 +1,16 @@
 import { el } from './dom'
 
 // smaller localStorage with events
-export function get(key: string): any {
-  return localStorage.getItem(key)
+export function get(key: string, _default?: any): any {
+  let ret = localStorage.getItem(key)
+  if (!ret && _default) {
+    ret = _default
+    if (typeof _default === 'function') {
+      ret = _default()
+    }
+    set(key, ret)
+  }
+  return ret
 }
 export function update(
   key: string,
@@ -83,4 +91,8 @@ export function listen(
       cb({ key: ev.detail.key, value: ev.detail.value })
     }
   })
+}
+
+export function clear(key: string) {
+  localStorage.removeItem(key)
 }
