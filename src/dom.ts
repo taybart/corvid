@@ -21,7 +21,10 @@ export function onKey(
     meta: boolean
     shift: boolean
   }) => void,
+  verbose = false,
 ) {
+  const log = new logger(verbose ? logLevel.debug : logLevel.none, 'onKey')
+  log.debug(`adding ${key} keydown listener`)
   const handler = (ev: KeyboardEvent) => {
     if (ev.key === key) {
       cb({
@@ -34,6 +37,7 @@ export function onKey(
   }
   window.addEventListener('keydown', handler)
   return () => {
+    log.debug(`removing ${key} listener`)
     window.removeEventListener('keydown', handler)
   }
 }
