@@ -22,7 +22,7 @@ export function onKey(
     shift: boolean
   }) => void,
 ) {
-  window.addEventListener('keydown', (ev: KeyboardEvent) => {
+  const handler = (ev: KeyboardEvent) => {
     if (ev.key === key) {
       cb({
         ctrl: ev.ctrlKey,
@@ -31,7 +31,11 @@ export function onKey(
         shift: ev.shiftKey,
       })
     }
-  })
+  }
+  window.addEventListener('keydown', handler)
+  return () => {
+    window.removeEventListener('keydown', handler)
+  }
 }
 
 export function els(query: string, verbose: boolean = false) {
@@ -159,6 +163,17 @@ export class el {
       this.el.appendChild(ch!.el!)
     } else {
       this.el.appendChild(ch)
+    }
+    return this
+  }
+  prependChild(ch: HTMLElement | el) {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    if (ch instanceof el) {
+      this.el.prepend(ch!.el!)
+    } else {
+      this.el.prepend(ch)
     }
     return this
   }
