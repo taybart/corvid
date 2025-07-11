@@ -116,3 +116,14 @@ style.onDarkMode((isDark) => {
     console.log(`is dark mode: ${isDark} and background is ${style.cssVar('--color-bg')`)
 })
 ```
+
+### QR
+
+```js
+import { QR } '@taybart/corvid/qr'
+
+QR.render({
+    text: 'https://example.com',
+    size: 200,
+}, document.getElementById('qr'))
+```

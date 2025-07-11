@@ -8,6 +8,12 @@ export default defineConfig({
       dts: true,
     },
   ],
+  source: {
+    entry: {
+      index: './src/index.ts',
+      qr: './src/qr/index.ts',
+    },
+  },
   output: {
     target: 'web',
   },

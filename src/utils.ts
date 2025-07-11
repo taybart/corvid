@@ -21,16 +21,25 @@ export function genID(
  * Clipboard helper because i can't remember the funciton names
  */
 export const clipboard = {
+  check() {
+    if (!navigator.clipboard) {
+      throw new Error('Clipboard API not supported, or context is not https')
+    }
+  },
   async copy(text: string) {
+    this.check()
     await navigator.clipboard.writeText(text)
   },
   async copyArbitrary(data: any) {
+    this.check()
     await navigator.clipboard.write(data)
   },
   async read(): Promise<string> {
+    this.check()
     return await navigator.clipboard.readText()
   },
   async readArbitrary(): Promise<any> {
+    this.check()
     return await navigator.clipboard.read()
   },
   listen(query: string | HTMLElement, cb: (contents: string) => string) {

@@ -13,6 +13,12 @@ export function ready(cb: () => void) {
   window.addEventListener('DOMContentLoaded', cb)
 }
 
+export function on(event: string, cb: (ev: Event) => void) {
+  document.addEventListener(event, cb)
+  return () => {
+    document.removeEventListener(event, cb)
+  }
+}
 export function onKey(
   key: string,
   cb: (ev: {
