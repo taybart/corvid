@@ -37,7 +37,7 @@ export type requestOpts = {
   url?: string
   type?: 'json'
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
-  params?: typeof params
+  params?: Object | params
   headers?: Record<string, string>
   auth?: string
   body?: Object
@@ -89,12 +89,14 @@ export class request {
   }
   async do({
     path,
+    params: passedParams,
     override,
   }: {
     path?: string
+    params?: Object
     override?: {
       success?: number
-      params?: any
+      params?: Object
       body?: Object
     }
   } = {}) {
@@ -109,9 +111,19 @@ export class request {
     if (path) {
       url = `${this.opts.url}${path}`
     }
-    const params = override.params || this.opts.params
-    if (params) {
-      url = `${url}?${params.toString()}`
+    let reqParams
+    if (override.params || this.opts.params) {
+      reqParams = new params(override.params || this.opts.params)
+    }
+    if (passedParams) {
+      if (!reqParams) {
+        reqParams = new params(passedParams)
+      } else {
+        reqParams = new params(reqParams).set(passedParams)
+      }
+    }
+    if (reqParams) {
+      url = `${url}?${reqParams.toString()}`
     }
     this.log.debug(`${this.opts.method} ${url}`)
     const res = await fetch(url, {

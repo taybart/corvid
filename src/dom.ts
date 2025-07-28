@@ -60,7 +60,7 @@ type elOpts = {
   query?: string
   type?: string
   content?: any
-  class?: string
+  class?: string | string[]
   style?: Object
   id?: string
   parent?: HTMLElement | el
@@ -111,7 +111,13 @@ export class el {
         this.el.id = id
       }
       if (styleClass) {
-        this.el.classList.add(styleClass)
+        if (typeof styleClass === 'string') {
+          this.el.classList.add(styleClass)
+        } else {
+          for (const sc of styleClass) {
+            this.el.classList.add(sc)
+          }
+        }
       }
       if (style) {
         this.style(style)
@@ -237,18 +243,30 @@ export class el {
     }
     return this.el.classList.contains(className)
   }
-  addClass(className: string) {
+  addClass(className: string | string[]) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
-    this.el.classList.add(className)
+    if (typeof className === 'string') {
+      this.el.classList.add(className)
+    } else {
+      for (const sc of className) {
+        this.el.classList.add(sc)
+      }
+    }
     return this
   }
-  removeClass(className: string) {
+  removeClass(className: string | string[]) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
-    this.el.classList.remove(className)
+    if (typeof className === 'string') {
+      this.el.classList.remove(className)
+    } else {
+      for (const sc of className) {
+        this.el.classList.remove(sc)
+      }
+    }
     return this
   }
   /*** Templates ***/
@@ -292,6 +310,9 @@ export class el {
   removeListeners(event: string) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
+    }
+    if (!this.listeners[event]) {
+      return this
     }
     for (const cb of this.listeners[event]) {
       this.el.removeEventListener(event, cb)
