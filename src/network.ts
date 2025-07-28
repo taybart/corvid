@@ -69,9 +69,9 @@ export class request {
     if (!this.opts.credentials) {
       this.opts.credentials = 'omit'
     }
-    if (!this.opts.params && typeof opts.params === 'object') {
+    if (this.opts.params && !(this.opts.params instanceof params)) {
       this.log.debug(`converting object params to class`)
-      this.opts.params = new params(opts.params)
+      this.opts.params = new params(this.opts.params)
     }
     this.log.debug(`with options: ${JSON.stringify(this.opts)}`)
   }
@@ -115,7 +115,7 @@ export class request {
     if (path) {
       url = `${this.opts.url}${path}`
     }
-    let reqParams = this.opts.params
+    let reqParams = this.opts.params as params
     if (override.params) {
       reqParams = new params(override.params)
     }
@@ -123,7 +123,7 @@ export class request {
       if (!reqParams) {
         reqParams = new params(passedParams)
       } else {
-        reqParams = new params(reqParams).set(passedParams)
+        reqParams.set(passedParams)
       }
     }
 
