@@ -69,6 +69,10 @@ export class request {
     if (!this.opts.credentials) {
       this.opts.credentials = 'omit'
     }
+    if (!this.opts.params && typeof opts.params === 'object') {
+      this.log.debug(`converting object params to class`)
+      this.opts.params = new params(opts.params)
+    }
     this.log.debug(`with options: ${JSON.stringify(this.opts)}`)
   }
   auth(token: string) {
@@ -111,9 +115,9 @@ export class request {
     if (path) {
       url = `${this.opts.url}${path}`
     }
-    let reqParams
-    if (override.params || this.opts.params) {
-      reqParams = new params(override.params || this.opts.params)
+    let reqParams = this.opts.params
+    if (override.params) {
+      reqParams = new params(override.params)
     }
     if (passedParams) {
       if (!reqParams) {
@@ -122,7 +126,9 @@ export class request {
         reqParams = new params(reqParams).set(passedParams)
       }
     }
+
     if (reqParams) {
+      this.log.debug(`params: ${reqParams.toString()}`)
       url = `${url}?${reqParams.toString()}`
     }
     this.log.debug(`${this.opts.method} ${url}`)
