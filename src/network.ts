@@ -39,7 +39,7 @@ export type requestOpts = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   params?: Object | params
   headers?: Record<string, string>
-  auth?: string
+  auth?: string | { username: string; password: string }
   body?: Object
   success?: number
   credentials?: RequestCredentials
@@ -75,7 +75,7 @@ export class request {
     }
     this.log.debug(`with options: ${JSON.stringify(this.opts)}`)
   }
-  auth(token: string) {
+  auth(token: string | { username: string; password: string }) {
     const header = `Bearer ${token}`
     this.log.debug(`adding auth token header ${header}`)
     this.opts.headers!.Authorization = header
@@ -91,7 +91,7 @@ export class request {
     this.opts.body = body
     return this
   }
-  async do({
+  build({
     path,
     params: passedParams,
     override,
@@ -104,8 +104,14 @@ export class request {
       body?: Object
     }
   } = {}) {
-    if (this.opts.auth) {
-      this.opts.headers!.Authorization = `Bearer ${this.opts.auth}`
+    if (this.opts.auth && !this.opts.headers!.Authorization) {
+      if (typeof this.opts.auth === 'string') {
+        this.opts.headers!.Authorization = `Bearer ${this.opts.auth}`
+      } else {
+        this.opts.headers!.Authorization = `Basic ${btoa(
+          `${this.opts.auth.username}:${this.opts.auth.password}`,
+        )}`
+      }
     }
     if (!override) {
       override = {}
@@ -132,16 +138,40 @@ export class request {
       url = `${url}?${reqParams.toString()}`
     }
     this.log.debug(`${this.opts.method} ${url}`)
-    const res = await fetch(url, {
-      method: this.opts.method,
-      credentials: this.opts.credentials,
-      headers: {
-        accept: 'application/json',
-        'content-type': 'application/json',
-        ...this.opts.headers,
+    return {
+      url,
+      options: {
+        method: this.opts.method,
+        credentials: this.opts.credentials,
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          ...this.opts.headers,
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
+    }
+  }
+  async do({
+    path,
+    params: passedParams,
+    override = {},
+  }: {
+    path?: string
+    params?: Object
+    override?: {
+      success?: number
+      params?: Object
+      body?: Object
+    }
+  } = {}) {
+    const { url, options } = this.build({
+      path,
+      params: passedParams,
+      override,
     })
+    this.log.debug(`${this.opts.method} ${url}`)
+    const res = await fetch(url, options)
     const success = override.success || this.opts.success
     if (res.status !== success) {
       const body = await res.json()
@@ -308,3 +338,4 @@ export class refresh {
 //     this.sse.close()
 //   }
 // }
+export default { params, request, ws, refresh }

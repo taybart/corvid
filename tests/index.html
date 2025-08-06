@@ -1,0 +1,323 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Corvid Tests</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "@taybart/corvid": "/dist/index.js",
+          "@taybart/corvid/dom": "/dist/dom.js",
+          "@taybart/corvid/network": "/dist/network.js",
+          "@taybart/corvid/qr": "/dist/qr.js"
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --color-fg: #ffffff;
+        --color-bg: #1e2227;
+        --color-fail: red;
+        --color-pass: green;
+
+        /* --color-shadow-1: #ff005e; */
+        --color-shadow-1: #ff00bd;
+        --color-shadow-2: #00d4ff;
+
+        box-sizing: border-box;
+        line-height: 1.4;
+        /* https://kilianvalkhof.com/2022/css-html/your-css-reset-needs-text-size-adjust-probably/ */
+        -moz-text-size-adjust: none;
+        -webkit-text-size-adjust: none;
+        text-size-adjust: none;
+      }
+
+      [data-theme='light'] {
+        --color-bg: #ffffff;
+        --color-fg: #1e2227;
+      }
+      [data-theme='dark'] {
+        --color-bg: #1e2227;
+        --color-fg: #ffffff;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: inherit;
+      }
+
+      html {
+        color: var(--color-fg);
+        background-color: var(--color-bg);
+        font-family: sans-serif;
+      }
+
+      body,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      p {
+        margin: 0;
+        padding: 0;
+        font-weight: normal;
+      }
+    </style>
+    <style>
+      html,
+      body {
+        font-family: sans-serif;
+        width: 100%;
+        height: 100%;
+        background-color: var(--color-bg);
+        color: var(--color-fg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .test-suite {
+        width: 100%;
+        margin: 0 1em;
+        padding-bottom: 2em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .test {
+        font-size: 2em;
+        border: 1px solid var(--color-fg);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        width: 100%;
+        max-width: 25em;
+
+        &::after {
+          color: var(--color-fail);
+          content: '✗';
+        }
+        &.passing {
+          &::after {
+            color: var(--color-pass);
+            content: '✓';
+          }
+        }
+      }
+      @keyframes shadow-dance {
+        0%,
+        0%,
+        100% {
+          text-shadow:
+            5px 5px 0 var(--color-shadow-1),
+            10px 10px 0 var(--color-shadow-2);
+        }
+        25% {
+          text-shadow:
+            5px -5px 0 var(--color-shadow-1),
+            10px -10px 0 var(--color-shadow-2);,
+        }
+        50% {
+          text-shadow:
+            -5px -5px 0 var(--color-shadow-1),
+            -10px -10px 0 var(--color-shadow-2);
+        }
+        75% {
+          text-shadow:
+            -5px 5px 0 var(--color-shadow-1),
+            -10px 10px 0 var(--color-shadow-2);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      window.pass = (id) => {
+        document.querySelector(id).classList.add('passing')
+      }
+    </script>
+    <div class="test-suite" id="module-dom">
+      <h1>DOM</h1>
+      <div class="test" id="dom-ready">ready</div>
+      <div class="test" id="dom-content">content-failed</div>
+      <div class="test" id="dom-style">style</div>
+      <div class="test" id="dom-class">class</div>
+      <div class="test" id="dom-parent">parent</div>
+      <div class="test" id="dom-child">child</div>
+      <div class="test" id="dom-empty">empty</div>
+      <div class="test" id="dom-listen">listen</div>
+      <div class="test" id="dom-template">template</div>
+      <script type="module">
+        /*** dom tests ***/
+        import dom from '@taybart/corvid/dom'
+
+        function domTest(query, cb) {
+          const e = dom.el.query(query)
+          if (cb(e, document.querySelector(query))) {
+            window.pass(query)
+          }
+        }
+        dom.ready(() => {
+          window.pass('#dom-ready')
+          domTest('#dom-content', (el, fromDom) => {
+            el.content('content')
+            return fromDom.textContent === 'content'
+          })
+          domTest('#dom-style', (el, fromDom) => {
+            const color = 'var(--color-pass)'
+            // const color = 'rgb(212, 255, 200)'
+            el.style({
+              color,
+              textShadow:
+                '5px 5px 0 var(--color-shadow-1), 10px 10px 0 var(--color-shadow-2)',
+              animation: 'shadow-dance 2s infinite',
+            })
+            return fromDom.style.color === color
+          })
+          domTest('#dom-class', (el, fromDom) => {
+            el.addClass('passing')
+            return false
+          })
+          domTest('#dom-parent', (el, fromDom) => {
+            new dom.el({
+              id: 'dom-parents-child',
+              type: 'div',
+              parent: el,
+              content: 'hi',
+              style: { color: 'var(--color-bg)' },
+            })
+            const el3 = document.querySelector('#dom-parents-child')
+            return el3.textContent === 'hi'
+          })
+          domTest('#dom-child', (el, fromDom) => {
+            el.child(
+              new dom.el({
+                id: 'dom-is-child',
+                type: 'div',
+                content: 'hi',
+                style: { color: 'var(--color-bg)' },
+              }),
+            )
+            const el3 = document.querySelector('#dom-is-child')
+            return el3.textContent === 'hi'
+          })
+          domTest('#dom-empty', (el, fromDom) => {
+            el.content('a'.repeat(100))
+            el.empty()
+            if (fromDom.textContent === '') {
+              el.content('empty')
+              return true
+            }
+          })
+          domTest('#dom-listen', (el, fromDom) => {
+            el.listen('click', () => {
+              window.pass('#dom-listen')
+            })
+            fromDom.click()
+          })
+          // domTest('#dom-template', (el, fromDom) => {
+          //   el.html(dom.html`<div>hello</div>`)
+          //   fromDom.click()
+          // })
+        })
+      </script>
+    </div>
+    <div class="test-suite" id="module-style">
+      <h1>Style</h1>
+      <div class="test" id="style-cssvar">css var</div>
+      <div class="test" id="style-render">render</div>
+      <script type="module">
+        import { dom, style } from '@taybart/corvid'
+        dom.ready(() => {
+          style.handleThemeSwitch()
+          if (
+            style.cssVar('--color-fg') ===
+            (style.isDarkMode() ? '#ffffff' : '#1e2227')
+          ) {
+            window.pass('#style-cssvar')
+          }
+          if (
+            style.render({ backgroundColor: 'black' }) ===
+            'background-color:black;'
+          ) {
+            window.pass('#style-render')
+          }
+        })
+      </script>
+    </div>
+    <div class="test-suite" id="module-network">
+      <h1>Network</h1>
+      <div class="test" id="network-build">build</div>
+      <div class="test" id="network-build-params">build params</div>
+      <div class="test" id="network-auth">auth</div>
+      <div class="test" id="network-basic-auth">basic auth</div>
+      <script type="module">
+        /*** network tests ***/
+        import network from '@taybart/corvid/network'
+        const service = 'test'
+        const client = new network.request({
+          url: '/api',
+          auth: 'auth-header',
+          params: { service },
+          credentials: 'include',
+        })
+        {
+          const { url, options } = client.build()
+          if (url === '/api?service=test') {
+            window.pass('#network-build')
+          }
+        }
+
+        {
+          const { url, options } = client.build({
+            path: '/hello',
+            params: { logs: true },
+          })
+          if (url === '/api/hello?service=test&logs=true') {
+            window.pass('#network-build-params')
+          }
+        }
+        {
+          const { options } = client.build()
+          if (options.headers.Authorization === 'Bearer auth-header') {
+            window.pass('#network-auth')
+          }
+        }
+        {
+          client.basicAuth('user', 'pass')
+          const { options } = client.build()
+          if (options.headers.Authorization === 'Basic dXNlcjpwYXNz') {
+            window.pass('#network-basic-auth')
+          }
+        }
+      </script>
+    </div>
+    <div class="test-suite" id="module-qr">
+      <h1>QR</h1>
+      <div class="test" id="qr"></div>
+      <script type="module">
+        import { dom, style } from '@taybart/corvid'
+        import { QR } from '@taybart/corvid/qr'
+
+        dom.ready(() => {
+          try {
+            QR.render(
+              {
+                text: 'pass',
+                fill: style.cssVar('--color-fg'),
+                background: style.cssVar('--color-bg'),
+              },
+              dom.el.query('#qr'),
+            )
+            window.pass('#qr')
+          } catch (e) {
+            console.error(e)
+          }
+        })
+      </script>
+    </div>
+  </body>
+</html>

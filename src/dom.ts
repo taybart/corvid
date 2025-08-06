@@ -132,6 +132,10 @@ export class el {
       }
     }
   }
+  static query(query: string, verbose: boolean = false) {
+    return new el(query, verbose)
+  }
+
   /*** dom manipulation ***/
   value(update?: string): string | el {
     if (!this.el) {
@@ -270,6 +274,12 @@ export class el {
     return this
   }
   /*** Templates ***/
+  html(content: string) {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    this.el.innerHTML = content
+  }
   render(vars = {}) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
@@ -337,3 +347,5 @@ export function interpolate(str: string, params: Object): string {
     `return \`${str.replace(/\$\{(\w*)\}/g, '${_$1}')}\`;`,
   )(...vals)
 }
+
+export default { el, els, ready, on, onKey }

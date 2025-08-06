@@ -11,6 +11,8 @@ export default defineConfig({
   source: {
     entry: {
       index: './src/index.ts',
+      dom: './src/dom.ts',
+      network: './src/network.ts',
       qr: './src/qr/index.ts',
     },
   },

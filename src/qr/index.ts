@@ -3,6 +3,7 @@
 // Modernized with ES6 syntax and TypeScript types
 
 import { QRCodeGenerator } from './qr-generator'
+import { el } from '../dom.ts'
 
 export interface QRCodeConfig {
   text: string
@@ -35,13 +36,16 @@ export interface QRCode {
 export class QR {
   static render(
     config: QRCodeConfig,
-    element: HTMLElement | HTMLCanvasElement,
+    element: el | HTMLElement | HTMLCanvasElement,
   ): void {
     const settings = this.getDefaultSettings(config)
 
     if (element instanceof HTMLCanvasElement) {
       this.renderToCanvas(element, settings)
     } else {
+      if (element instanceof el) {
+        element = element.el!
+      }
       const canvas = this.createCanvas(settings)
       element.appendChild(canvas)
     }
