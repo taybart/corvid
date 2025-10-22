@@ -36,13 +36,14 @@ export class params {
 export type requestOpts = {
   url?: string
   type?: 'json'
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  method?: 'HEAD' | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS'
   params?: Object | params
   headers?: Record<string, string>
   auth?: string | { username: string; password: string }
   body?: Object
   success?: number
   credentials?: RequestCredentials
+  insecureNoVerify?: boolean
 }
 export class request {
   opts: requestOpts
@@ -102,6 +103,8 @@ export class request {
       success?: number
       params?: Object
       body?: Object
+      headers?: Object
+      method?: string
     }
   } = {}) {
     if (this.opts.auth && !this.opts.headers!.Authorization) {
@@ -137,16 +140,19 @@ export class request {
       this.log.debug(`params: ${reqParams.toString()}`)
       url = `${url}?${reqParams.toString()}`
     }
+    override.headers = override.headers || {}
     this.log.debug(`${this.opts.method} ${url}`)
     return {
       url,
       options: {
-        method: this.opts.method,
+        method: override.method || this.opts.method,
         credentials: this.opts.credentials,
         headers: {
-          accept: 'application/json',
-          'content-type': 'application/json',
+          // TODO: this fucks up if you provide the same header externally
+          // accept: 'application/json',
+          // 'Content-Type': 'application/json',
           ...this.opts.headers,
+          ...override.headers,
         },
         body: JSON.stringify(body),
       },
@@ -162,6 +168,7 @@ export class request {
     override?: {
       success?: number
       params?: Object
+      headers?: Object
       body?: Object
     }
   } = {}) {
@@ -171,7 +178,7 @@ export class request {
       override,
     })
     this.log.debug(`${this.opts.method} ${url}`)
-    const res = await fetch(url, options)
+    const res = await fetch(url, options as RequestInit)
     const success = override.success || this.opts.success
     if (res.status !== success) {
       const body = await res.json()
