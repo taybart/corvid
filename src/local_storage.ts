@@ -3,7 +3,7 @@ import { el } from './dom'
 // smaller localStorage with events
 export function get(key: string, _default?: any): any {
   let ret = localStorage.getItem(key)
-  if (!ret && _default !== undefined && _default !== null) {
+  if (ret === null && _default !== undefined && _default !== null) {
     ret = _default
     if (typeof _default === 'function') {
       ret = _default()
