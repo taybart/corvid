@@ -183,12 +183,17 @@ export class request {
     const res = await fetch(url, options as RequestInit)
     const expect = override.expect || this.opts.expect
     if (res.status !== expect) {
-      const body = await res.json()
+      const body = await res.text()
       throw new Error(
         `bad response ${res.status} !== ${expect}, body: ${body}`,
       )
     }
-    return await res.json()
+    this.log.debug(`content type: ${res.headers.get('content-type')}`)
+    if (res.headers.get('content-type') === 'application/json') {
+      return await res.json()
+    } else {
+      return await res.text()
+    }
   }
 }
 
@@ -223,7 +228,7 @@ export class ws {
     this.backoff = 100
     this.ws.addEventListener('open', () => {
       const rl = this.recursion_level
-      this.log.debug(`on open: reconnected (${rl})`)
+      this.log.debug(`on open: reconnected(${rl})`)
       this.is_connected = true
 
       if (!this.ws) return
@@ -231,7 +236,7 @@ export class ws {
       for (let key in this.event_listeners) {
         this.event_listeners[key].forEach((cb) => {
           if (this.ws) {
-            this.log.debug(`adding listener (${rl}): ${key}`)
+            this.log.debug(`adding listener(${rl}): ${key} `)
             this.ws.addEventListener(key, cb)
           }
         })
@@ -242,7 +247,7 @@ export class ws {
 
       this.is_connected = false
       this.backoff = Math.min(this.backoff * 2, this.max_timeout)
-      this.log.debug(`backoff: ${this.backoff}`)
+      this.log.debug(`backoff: ${this.backoff} `)
       this.reconnect_timer = window.setTimeout(
         () => {
           if (this.should_reconnect) {
@@ -270,7 +275,7 @@ export class ws {
     }
     const handler = (e: MessageEvent) => {
       const rl = this.recursion_level
-      this.log.debug(`message(${rl}): ${e.data}`)
+      this.log.debug(`message(${rl}): ${e.data} `)
       cb(e.data)
     }
     this.event_listeners.message.push(handler)
