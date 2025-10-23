@@ -165,11 +165,13 @@ export class request {
   }: {
     path?: string
     params?: Object
+    method?: string
     override?: {
-      expect?: number
+      method?: string
       params?: Object
       headers?: Object
       body?: Object
+      expect?: number
     }
   } = {}) {
     const { url, options } = this.build({
