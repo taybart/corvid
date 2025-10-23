@@ -1,6 +1,6 @@
 {
   "name": "@taybart/corvid",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
@@ -11,6 +11,10 @@
     "./dom": {
       "types": "./dist/dom.d.ts",
       "import": "./dist/dom.js"
+    },
+    "./local_storage": {
+      "types": "./dist/ls.d.ts",
+      "import": "./dist/ls.js"
     },
     "./network": {
       "types": "./dist/network.d.ts",

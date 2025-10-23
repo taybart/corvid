@@ -41,7 +41,7 @@ export type requestOpts = {
   headers?: Record<string, string>
   auth?: string | { username: string; password: string }
   body?: Object
-  success?: number
+  expect?: number
   credentials?: RequestCredentials
   insecureNoVerify?: boolean
 }
@@ -58,8 +58,8 @@ export class request {
     }
 
     this.opts = opts
-    if (!this.opts.success) {
-      this.opts.success = 200
+    if (!this.opts.expect) {
+      this.opts.expect = 200
     }
     if (!this.opts.method) {
       this.opts.method = 'GET'
@@ -166,7 +166,7 @@ export class request {
     path?: string
     params?: Object
     override?: {
-      success?: number
+      expect?: number
       params?: Object
       headers?: Object
       body?: Object
@@ -179,11 +179,11 @@ export class request {
     })
     this.log.debug(`${this.opts.method} ${url}`)
     const res = await fetch(url, options as RequestInit)
-    const success = override.success || this.opts.success
-    if (res.status !== success) {
+    const expect = override.expect || this.opts.expect
+    if (res.status !== expect) {
       const body = await res.json()
       throw new Error(
-        `bad response ${res.status} !== ${success}, body: ${body}`,
+        `bad response ${res.status} !== ${expect}, body: ${body}`,
       )
     }
     return await res.json()

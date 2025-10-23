@@ -3,7 +3,7 @@ import { el } from './dom'
 // smaller localStorage with events
 export function get(key: string, _default?: any): any {
   let ret = localStorage.getItem(key)
-  if (!ret && _default) {
+  if (!ret && _default !== undefined && _default !== null) {
     ret = _default
     if (typeof _default === 'function') {
       ret = _default()
@@ -27,15 +27,17 @@ export function update(
   }
   localStorage.setItem(key, value)
 }
+
+// set: if key is an object, setObj will be called with value passed as a prefix
 export function set(
-  key: string | object,
+  key: string,
   value: any,
   broadcast: boolean = false,
 ) {
-  if (typeof key === 'object') {
-    setObj(key, value, broadcast)
-    return
-  }
+  // if (typeof key === 'object') {
+  //   setObj(key, value, broadcast)
+  //   return
+  // }
   const prev = get(key)
   if (prev !== value || broadcast) {
     const event = new CustomEvent('@corvid/ls-update', {
@@ -43,7 +45,7 @@ export function set(
     })
     document.dispatchEvent(event)
   }
-  localStorage.setItem(key, value)
+  localStorage.setItem(key, JSON.stringify(value))
 }
 export function setObj(
   update: object,
