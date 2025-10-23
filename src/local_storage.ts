@@ -45,7 +45,7 @@ export function set(
     })
     document.dispatchEvent(event)
   }
-  localStorage.setItem(key, JSON.stringify(value))
+  localStorage.setItem(key, value)
 }
 export function setObj(
   update: object,
