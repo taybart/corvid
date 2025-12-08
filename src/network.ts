@@ -44,6 +44,7 @@ export type requestOpts = {
   expect?: number
   credentials?: RequestCredentials
   insecureNoVerify?: boolean
+  fetch?: (url: string, init: RequestInit) => Promise<any>
 }
 export class request {
   opts: requestOpts
@@ -73,6 +74,9 @@ export class request {
     if (this.opts.params && !(this.opts.params instanceof params)) {
       this.log.debug(`converting object params to class`)
       this.opts.params = new params(this.opts.params)
+    }
+    if (!this.opts.fetch) {
+      this.opts.fetch = window.fetch
     }
     this.log.debug(`with options: ${JSON.stringify(this.opts)}`)
   }
@@ -180,7 +184,7 @@ export class request {
       override,
     })
     this.log.debug(`${this.opts.method} ${url}`)
-    const res = await fetch(url, options as RequestInit)
+    const res = await this.opts.fetch!(url, options as RequestInit)
     const expect = override.expect || this.opts.expect
     if (res.status !== expect) {
       const body = await res.text()
