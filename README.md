@@ -1,8 +1,11 @@
 # Corvid
 
-fear the crow
+<p align="center"><img src="https://github.com/user-attachments/assets/b3bbf267-d7b0-4116-80a5-b932b409a111" width="100" height="100"></p>
 
-![crowtein](https://github.com/user-attachments/assets/b3bbf267-d7b0-4116-80a5-b932b409a111)
+<p align="center">fear the crow</p>
+
+
+<!-- ![crowtein](https://github.com/user-attachments/assets/b3bbf267-d7b0-4116-80a5-b932b409a111) -->
 
 ## Usage
 
