@@ -12,6 +12,7 @@ export default defineConfig({
     entry: {
       index: './src/index.ts',
       dom: './src/dom.ts',
+      style: './src/style.ts',
       network: './src/network.ts',
       ls: './src/local_storage.ts',
       qr: './src/qr/index.ts',

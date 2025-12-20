@@ -12,6 +12,10 @@
       "types": "./dist/dom.d.ts",
       "import": "./dist/dom.js"
     },
+    "./style": {
+      "types": "./dist/style.d.ts",
+      "import": "./dist/style.js"
+    },
     "./local_storage": {
       "types": "./dist/ls.d.ts",
       "import": "./dist/ls.js"
