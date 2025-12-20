@@ -86,7 +86,7 @@ import { network } '@taybart/corvid'
 const api = network.create({
   url: 'https://api.example.com',
   credentials: 'include',
-  success: 250, // odd success code
+  success: 250, // check for non-200 success code
   // corvid params, string, or custom object that has .toString() and renders url safe params
   params: new network.params({hello: 'corvid'})
 })
@@ -118,15 +118,27 @@ style.onDarkMode((isDark) => {
     // get css variables
     console.log(`is dark mode: ${isDark} and background is ${style.cssVar('--color-bg')`)
 })
+
+```
+
+Just handle switching automatically
+
+```html
+<script type='module'>
+    import { handleThemeSwitch } from '@taybart/corvid/style'
+    handleThemeSwitch()
+</script>
 ```
 
 ### QR
 
 ```js
+import { dom } from '@taybart/corvid'
 import { QR } '@taybart/corvid/qr'
 
+const el = new dom.el('#qr')
 QR.render({
     text: 'https://example.com',
     size: 200,
-}, document.getElementById('qr'))
+}, el) // can also be regular element query -> document.getElementById('qr')
 ```
