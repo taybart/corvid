@@ -64,6 +64,7 @@ type elOpts = {
   style?: Object
   id?: string
   parent?: HTMLElement | el
+  attrs?: Object
 }
 export class el {
   el: HTMLElement | null
@@ -86,7 +87,7 @@ export class el {
     }
     // prettier-ignore
     const {
-      query, element, type, class: styleClass, style, id, content, parent,
+      query, element, type, class: styleClass, style, id, content, parent, attrs,
     } = opts as elOpts
     if (query) {
       this.log.debug(`using query: ${query}`)
@@ -129,6 +130,12 @@ export class el {
       if (parent) {
         this.log.debug(`adding to parent`)
         parent.appendChild(this.el)
+      }
+    }
+    if (attrs) {
+      for (const [key, val] of Object.entries(attrs)) {
+        this.log.debug(`setting prop: ${key} to ${val}`)
+        this.el.setAttribute(key, val)
       }
     }
   }
