@@ -12,6 +12,14 @@ export function get(key: string, _default?: any): any {
   }
   return ret
 }
+export function getJSON(key: string, _default?: any): any {
+  const val = get(key, _default)
+  if (val === null) {
+    return null
+  }
+  return JSON.parse(val)
+}
+
 export function update(
   key: string,
   update: (current: any) => any,
@@ -29,11 +37,7 @@ export function update(
 }
 
 // set: if key is an object, setObj will be called with value passed as a prefix
-export function set(
-  key: string,
-  value: any,
-  broadcast: boolean = false,
-) {
+export function set(key: string, value: any, broadcast: boolean = false) {
   // if (typeof key === 'object') {
   //   setObj(key, value, broadcast)
   //   return
@@ -47,6 +51,7 @@ export function set(
   }
   localStorage.setItem(key, value)
 }
+// FIXME: i think this function is confusing
 export function setObj(
   update: object,
   prefix?: string,

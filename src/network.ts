@@ -44,6 +44,8 @@ export type requestOpts = {
   expect?: number
   credentials?: RequestCredentials
   insecureNoVerify?: boolean
+  // TODO: when we get back a 401 and we have a refresh token, this will be called to refresh the token
+  onUnauthorized?: (err: Error) => void
   fetch?: (url: string, init: RequestInit) => Promise<any>
 }
 export class request {
@@ -184,13 +186,13 @@ export class request {
       override,
     })
     this.log.debug(`${this.opts.method} ${url}`)
-    const res = await this.opts.fetch!(url, options as RequestInit)
+    // FIXME: this does not work: Failed to execute 'fetch' on 'Window': Illegal invocation
+    // const res = await this.opts.fetch!(url, options as RequestInit)
+    const res = await fetch(url, options as RequestInit)
     const expect = override.expect || this.opts.expect
     if (res.status !== expect) {
       const body = await res.text()
-      throw new Error(
-        `bad response ${res.status} !== ${expect}, body: ${body}`,
-      )
+      throw new Error(`bad response ${res.status} !== ${expect}, body: ${body}`)
     }
     this.log.debug(`content type: ${res.headers.get('content-type')}`)
     if (res.headers.get('content-type') === 'application/json') {
