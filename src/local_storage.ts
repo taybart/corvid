@@ -49,6 +49,9 @@ export function set(key: string, value: any, broadcast: boolean = false) {
     })
     document.dispatchEvent(event)
   }
+  if (typeof value === 'object') {
+    value = JSON.stringify(value)
+  }
   localStorage.setItem(key, value)
 }
 // FIXME: i think this function is confusing
@@ -83,11 +86,31 @@ export function setObj(
     set(key, v, broadcast)
   }
 }
+// export function listen(
+//   key: string,
+//   cb: (update: { key: string; value: any }) => void | el,
+// ) {
+//   document.addEventListener('@corvid/ls-update', (ev: any) => {
+//     if (ev.detail.key === key || key === '*') {
+//       if (cb instanceof el) {
+//         if (ev.detail.key === key) {
+//           cb.content(ev.detail.value)
+//         }
+//         return
+//       }
+//       cb({ key: ev.detail.key, value: ev.detail.value })
+//     }
+//   })
+// }
+
+const listeners = new Map<string, Map<Function, Function>>()
+
 export function listen(
   key: string,
   cb: (update: { key: string; value: any }) => void | el,
 ) {
-  document.addEventListener('@corvid/ls-update', (ev: any) => {
+  // Create the wrapper function that will be used for add/remove
+  const listener = (ev: any) => {
     if (ev.detail.key === key || key === '*') {
       if (cb instanceof el) {
         if (ev.detail.key === key) {
@@ -97,7 +120,36 @@ export function listen(
       }
       cb({ key: ev.detail.key, value: ev.detail.value })
     }
-  })
+  }
+
+  // Store the mapping so we can remove it later
+  if (!listeners.has(key)) {
+    listeners.set(key, new Map())
+  }
+  listeners.get(key)!.set(cb, listener)
+
+  document.addEventListener('@corvid/ls-update', listener)
+}
+
+export function unlisten(
+  key: string,
+  cb: (update: { key: string; value: any }) => void | el,
+) {
+  const keyListeners = listeners.get(key)
+  if (!keyListeners) return
+
+  const listener = keyListeners.get(cb)
+  if (!listener) return
+
+  document.removeEventListener(
+    '@corvid/ls-update' as keyof DocumentEventMap,
+    listener as EventListener,
+  )
+  keyListeners.delete(cb)
+
+  if (keyListeners.size === 0) {
+    listeners.delete(key)
+  }
 }
 
 export function clear(key: string) {

@@ -45,7 +45,7 @@ export type requestOpts = {
   credentials?: RequestCredentials
   insecureNoVerify?: boolean
   // TODO: when we get back a 401 and we have a refresh token, this will be called to refresh the token
-  onUnauthorized?: (err: Error) => void
+  onUnauthorized?: (body: any) => void
   fetch?: (url: string, init: RequestInit) => Promise<any>
 }
 export class request {
@@ -192,7 +192,14 @@ export class request {
     const expect = override.expect || this.opts.expect
     if (res.status !== expect) {
       const body = await res.text()
-      throw new Error(`bad response ${res.status} !== ${expect}, body: ${body}`)
+      if (res.status === 401 && this.opts.onUnauthorized) {
+        this.log.warn(`unauthorized`)
+        this.opts.onUnauthorized(body)
+      } else {
+        throw new Error(
+          `bad response ${res.status} !== ${expect}, body: ${body}`,
+        )
+      }
     }
     this.log.debug(`content type: ${res.headers.get('content-type')}`)
     if (res.headers.get('content-type') === 'application/json') {
