@@ -45,7 +45,7 @@ export type requestOpts = {
   credentials?: RequestCredentials
   insecureNoVerify?: boolean
   // TODO: when we get back a 401 and we have a refresh token, this will be called to refresh the token
-  onUnauthorized?: (body: any) => void
+  onUnauthorized?: (client: request, body: any) => Promise<boolean>
   fetch?: (url: string, init: RequestInit) => Promise<any>
 }
 export class request {
@@ -82,10 +82,11 @@ export class request {
     }
     this.log.debug(`with options: ${JSON.stringify(this.opts)}`)
   }
-  auth(token: string | { username: string; password: string }) {
-    const header = `Bearer ${token}`
-    this.log.debug(`adding auth token header ${header}`)
-    this.opts.headers!.Authorization = header
+  auth(a: string | { username: string; password: string }) {
+    // const header = `Bearer ${token}`
+    // this.log.debug(`adding auth token header ${header}`)
+    // this.opts.headers!.Authorization = header
+    this.opts.auth = a
     return this
   }
   basicAuth(username: string, password: string) {
@@ -113,7 +114,8 @@ export class request {
       method?: string
     }
   } = {}) {
-    if (this.opts.auth && !this.opts.headers!.Authorization) {
+    // if (this.opts.auth && !this.opts.headers!.Authorization) {
+    if (this.opts.auth) {
       if (typeof this.opts.auth === 'string') {
         this.opts.headers!.Authorization = `Bearer ${this.opts.auth}`
       } else {
@@ -168,6 +170,7 @@ export class request {
     path,
     params: passedParams,
     override = {},
+    _recurselevel = 0,
   }: {
     path?: string
     params?: Object
@@ -179,7 +182,8 @@ export class request {
       body?: Object
       expect?: number
     }
-  } = {}) {
+    _recurselevel?: number
+  } = {}): Promise<any> {
     const { url, options } = this.build({
       path,
       params: passedParams,
@@ -192,9 +196,16 @@ export class request {
     const expect = override.expect || this.opts.expect
     if (res.status !== expect) {
       const body = await res.text()
-      if (res.status === 401 && this.opts.onUnauthorized) {
+      if (res.status === 401 && this.opts.onUnauthorized && _recurselevel < 1) {
         this.log.warn(`unauthorized`)
-        this.opts.onUnauthorized(body)
+        if (await this.opts.onUnauthorized.call(this, this, body)) {
+          return this.do({
+            path,
+            params: passedParams,
+            override,
+            _recurselevel: _recurselevel + 1,
+          })
+        }
       } else {
         throw new Error(
           `bad response ${res.status} !== ${expect}, body: ${body}`,
