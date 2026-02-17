@@ -82,9 +82,6 @@ export class request {
       this.log.debug(`converting object params to class`)
       this.opts.params = new params(this.opts.params)
     }
-    if (!this.opts.fetch) {
-      this.opts.fetch = window.fetch
-    }
     this.log.debug(`with options: ${JSON.stringify(this.opts)}`)
   }
   auth(a: string | { username: string; password: string }) {
@@ -197,7 +194,12 @@ export class request {
     this.log.debug(`${this.opts.method} ${url}`)
     // FIXME: this does not work: Failed to execute 'fetch' on 'Window': Illegal invocation
     // const res = await this.opts.fetch!(url, options as RequestInit)
-    const res = await fetch(url, options as RequestInit)
+    let res
+    if (this.opts.fetch) {
+      res = await this.opts.fetch(url, options as RequestInit)
+    } else {
+      res = await fetch(url, options as RequestInit)
+    }
     const expect = override.expect || this.opts.expect
     if (res.status !== expect) {
       const body = await res.text()
