@@ -32,8 +32,13 @@ export class params {
   }
 }
 
+export type RequestError = {
+  error: string
+  status: number
+  body: string
+}
 /*** http request ***/
-export type requestOpts = {
+export type RequestOpts = {
   url?: string
   type?: 'json'
   method?: 'HEAD' | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS'
@@ -49,9 +54,9 @@ export type requestOpts = {
   fetch?: (url: string, init: RequestInit) => Promise<any>
 }
 export class request {
-  opts: requestOpts
+  opts: RequestOpts
   log: logger
-  constructor(opts: requestOpts = {}, verbose: boolean = false) {
+  constructor(opts: RequestOpts = {}, verbose: boolean = false) {
     this.log = new logger(verbose ? logLevel.debug : logLevel.none, 'request')
     if (opts.type && opts.type !== 'json') {
       throw new Error('this class only provides json requests')
@@ -207,9 +212,11 @@ export class request {
           })
         }
       } else {
-        throw new Error(
-          `bad response ${res.status} !== ${expect}, body: ${body}`,
-        )
+        throw {
+          message: `bad wesponse ${res.status} !== ${expect}, body: ${body}`,
+          status: res.status,
+          body,
+        }
       }
     }
     this.log.debug(`content type: ${res.headers.get('content-type')}`)
