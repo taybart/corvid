@@ -16,6 +16,7 @@ export default defineConfig({
       network: './src/network.ts',
       ls: './src/local_storage.ts',
       qr: './src/qr/index.ts',
+      utils: './src/utils.ts',
     },
   },
   output: {

@@ -155,3 +155,13 @@ export function unlisten(
 export function clear(key: string) {
   localStorage.removeItem(key)
 }
+
+export default {
+  get,
+  getJSON,
+  set,
+  update,
+  listen,
+  unlisten,
+  clear,
+}

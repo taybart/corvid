@@ -16,8 +16,8 @@
       "types": "./dist/style.d.ts",
       "import": "./dist/style.js"
     },
-    "./local_storage": {
-      "types": "./dist/ls.d.ts",
+    "./ls": {
+      "types": "./dist/local_storage.d.ts",
       "import": "./dist/ls.js"
     },
     "./network": {
@@ -25,8 +25,12 @@
       "import": "./dist/network.js"
     },
     "./qr": {
-      "types": "./dist/qr.d.ts",
+      "types": "./dist/qr/index.d.ts",
       "import": "./dist/qr.js"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.js"
     }
   },
   "module": "./dist/index.js",
