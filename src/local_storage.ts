@@ -41,8 +41,8 @@ export function set(key: string, value: any, broadcast: boolean = false) {
   if (typeof value === 'object') {
     value = JSON.stringify(value)
   }
-  localStorage.setItem(key, value)
   const prev = get(key)
+  localStorage.setItem(key, value)
   if (prev !== value || broadcast) {
     const event = new CustomEvent('@corvid/ls-update', {
       detail: { key, value },
