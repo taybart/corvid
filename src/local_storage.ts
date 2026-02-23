@@ -26,11 +26,15 @@ export function update(
   broadcast: boolean = false,
 ) {
   const prev = get(key)
-  const value = update(prev)
+  let value = update(prev)
+  const v = value
+  if (typeof value === 'object') {
+    value = JSON.stringify(value)
+  }
   localStorage.setItem(key, value)
   if (prev !== value || broadcast) {
     const event = new CustomEvent('@corvid/ls-update', {
-      detail: { key, value },
+      detail: { key, value: v },
     })
     document.dispatchEvent(event)
   }
@@ -38,6 +42,7 @@ export function update(
 
 // set: if key is an object, setObj will be called with value passed as a prefix
 export function set(key: string, value: any, broadcast: boolean = false) {
+  const v = value
   if (typeof value === 'object') {
     value = JSON.stringify(value)
   }
@@ -45,7 +50,7 @@ export function set(key: string, value: any, broadcast: boolean = false) {
   localStorage.setItem(key, value)
   if (prev !== value || broadcast) {
     const event = new CustomEvent('@corvid/ls-update', {
-      detail: { key, value },
+      detail: { key, value: v },
     })
     document.dispatchEvent(event)
   }
