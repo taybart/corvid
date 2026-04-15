@@ -17,7 +17,12 @@ export function getJSON(key: string, _default?: any): any {
   if (val === null) {
     return null
   }
-  return JSON.parse(val)
+  try {
+    return JSON.parse(val)
+  } catch (e) {
+    console.error(e)
+    return val
+  }
 }
 
 export function update(
