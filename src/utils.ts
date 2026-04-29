@@ -27,20 +27,36 @@ export const clipboard = {
     }
   },
   async copy(text: string) {
-    this.check()
-    await navigator.clipboard.writeText(text)
+    try {
+      this.check()
+      await navigator.clipboard.writeText(text)
+    } catch (e) {
+      throw e
+    }
   },
   async copyArbitrary(data: any) {
-    this.check()
-    await navigator.clipboard.write(data)
+    try {
+      this.check()
+      await navigator.clipboard.write(data)
+    } catch (e) {
+      throw e
+    }
   },
   async read(): Promise<string> {
-    this.check()
-    return await navigator.clipboard.readText()
+    try {
+      this.check()
+      return await navigator.clipboard.readText()
+    } catch (e) {
+      throw e
+    }
   },
   async readArbitrary(): Promise<any> {
-    this.check()
-    return await navigator.clipboard.read()
+    try {
+      this.check()
+      return await navigator.clipboard.read()
+    } catch (e) {
+      throw e
+    }
   },
   listen(query: string | HTMLElement, cb: (contents: string) => string) {
     let el
