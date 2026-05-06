@@ -61,32 +61,52 @@ export function set(key: string, value: any, broadcast: boolean = false) {
   }
 }
 
-const listeners = new Map<string, Map<Function, Function>>()
+const listeners = new Map<
+  string,
+  Map<
+    (update: { key: string; value: any }) => void | el,
+    { custom: EventListener; storage: EventListener }
+  >
+>()
 
 export function listen(
   key: string,
   cb: (update: { key: string; value: any }) => void | el,
 ) {
-  // Create the wrapper function that will be used for add/remove
-  const listener = (ev: any) => {
-    if (ev.detail.key === key || key === '*') {
+  // Same-tab: existing CustomEvent listener
+  const customListener: EventListener = (ev) => {
+    const customEv = ev as CustomEvent
+    if (customEv.detail.key === key || '*' === key) {
       if (cb instanceof el) {
-        if (ev.detail.key === key) {
-          cb.content(ev.detail.value)
-        }
+        if (customEv.detail.key === key) cb.content(customEv.detail.value)
         return
       }
-      cb({ key: ev.detail.key, value: ev.detail.value })
+      cb({ key: customEv.detail.key, value: customEv.detail.value })
     }
   }
-
-  // Store the mapping so we can remove it later
-  if (!listeners.has(key)) {
-    listeners.set(key, new Map())
+  // Cross-tab: native storage event (only fires in OTHER tabs)
+  const storageListener: EventListener = (ev) => {
+    const storageEv = ev as StorageEvent
+    if (storageEv.key === key || '*' === key) {
+      let value = storageEv.newValue
+      try {
+        value = JSON.parse(value!)
+      } catch (e) {
+        /* leave as string */
+      }
+      if (cb instanceof el) {
+        if (storageEv.key === key) cb.content(value)
+        return
+      }
+      cb({ key: storageEv.key!, value })
+    }
   }
-  listeners.get(key)!.set(cb, listener)
-
-  document.addEventListener('@corvid/ls-update', listener)
+  if (!listeners.has(key)) listeners.set(key, new Map())
+  listeners
+    .get(key)!
+    .set(cb, { custom: customListener, storage: storageListener })
+  document.addEventListener('@corvid/ls-update', customListener)
+  window.addEventListener('storage', storageListener)
 }
 
 export function unlisten(
@@ -95,19 +115,12 @@ export function unlisten(
 ) {
   const keyListeners = listeners.get(key)
   if (!keyListeners) return
-
   const listener = keyListeners.get(cb)
   if (!listener) return
-
-  document.removeEventListener(
-    '@corvid/ls-update' as keyof DocumentEventMap,
-    listener as EventListener,
-  )
+  document.removeEventListener('@corvid/ls-update', listener.custom)
+  window.removeEventListener('storage', listener.storage)
   keyListeners.delete(cb)
-
-  if (keyListeners.size === 0) {
-    listeners.delete(key)
-  }
+  if (0 === keyListeners.size) listeners.delete(key)
 }
 
 export function clear(key: string) {
