@@ -164,7 +164,9 @@ export class request {
           ...this.opts.headers,
           ...override.headers,
         },
-        body: JSON.stringify(body),
+        body: body instanceof FormData || body instanceof Blob || body instanceof ArrayBuffer
+          ? body
+          : JSON.stringify(body),
       },
     }
   }
@@ -221,9 +223,12 @@ export class request {
         }
       }
     }
-    this.log.debug(`content type: ${res.headers.get('content-type')}`)
-    if (res.headers.get('content-type') === 'application/json') {
+    const ct = res.headers.get('content-type') ?? ''
+    this.log.debug(`content type: ${ct}`)
+    if (ct.includes('application/json')) {
       return await res.json()
+    } else if (ct.startsWith('image/') || ct === 'application/octet-stream') {
+      return await res.blob()
     } else {
       return await res.text()
     }
