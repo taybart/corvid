@@ -151,19 +151,21 @@ export class request {
       url = `${url}?${reqParams.toString()}`
     }
     override.headers = override.headers || {}
+    const headers: Record<string, string> = {
+      ...this.opts.headers,
+      ...override.headers as Record<string, string>,
+    }
+    // Let the browser set Content-Type automatically for multipart bodies
+    if (body instanceof FormData) {
+      delete headers['Content-Type']
+    }
     this.log.debug(`${this.opts.method} ${url}`)
     return {
       url,
       options: {
         method: override.method || this.opts.method,
         credentials: this.opts.credentials,
-        headers: {
-          // TODO: this fucks up if you provide the same header externally
-          // accept: 'application/json',
-          // 'Content-Type': 'application/json',
-          ...this.opts.headers,
-          ...override.headers,
-        },
+        headers,
         body: body instanceof FormData || body instanceof Blob || body instanceof ArrayBuffer
           ? body
           : JSON.stringify(body),
