@@ -13,6 +13,23 @@ export function ready(cb: () => void) {
   window.addEventListener('DOMContentLoaded', cb)
 }
 
+/**
+ * onRefocus, called when the window is refocused
+ */
+let focused = true
+export function onFocus(cb: () => void) {
+  window.addEventListener('focus', () => {
+    cb()
+    focused = true
+  })
+}
+export function onBlur(cb: () => void) {
+  window.addEventListener('blur', () => {
+    focused = false
+    cb()
+  })
+}
+
 export function on(event: string, cb: (ev: Event) => void) {
   document.addEventListener(event, cb)
   return () => {

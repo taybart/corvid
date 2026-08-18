@@ -1,5 +1,7 @@
 import { el } from './dom'
 
+// TODO: add "mock" localstorage for running tests outside the browser
+
 // smaller localStorage with events
 export function get(key: string, _default?: any): any {
   let ret = localStorage.getItem(key)

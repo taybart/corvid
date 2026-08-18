@@ -1,4 +1,4 @@
-import { test, expect, describe, mock } from 'bun:test'
+import { test, expect, describe, vi } from 'vitest'
 import { fireEvent } from '@testing-library/dom'
 import * as dom from './dom'
 
@@ -35,14 +35,14 @@ describe('dom', () => {
 
   test('element event', () => {
     const div = new dom.el('#test')
-    const cb = mock()
+    const cb = vi.fn()
     div.on('click', cb)
     fireEvent.click(div.el!)
     expect(cb).toHaveBeenCalledTimes(1)
   })
 
   test('fires callback onKey', () => {
-    const cb = mock(({ ctrl }) => {
+    const cb = vi.fn(({ ctrl }: { ctrl: boolean }) => {
       expect(ctrl).toBeTruthy()
     })
     dom.onKey('a', cb)
