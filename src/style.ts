@@ -15,6 +15,20 @@ export function render(style: Object): string {
   return s
 }
 
+export function inject(className: string, style: Object): string {
+  const existing = document.getElementById(`corvid-injected-${className}`)
+  if (existing) existing.remove()
+  const injected = document.createElement('style')
+  injected.id = `corvid-injected-${className}`
+  let s = `.${className} {\n`
+  Object.entries(style).forEach(([k, v]) => (s += `${toKebab(k)}: ${v};\n`))
+  s += '}'
+  injected.textContent = s
+  document.head.appendChild(injected)
+
+  return s
+}
+
 /**
  * Check if the current theme is dark
  */
