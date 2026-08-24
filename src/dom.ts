@@ -87,7 +87,10 @@ export class el {
   el: HTMLElement | null
   query = ''
   log: logger
-  listeners: Record<string, Array<(ev: Event) => void>> = {}
+  listeners: Record<
+    string,
+    Array<{ cb: (ev: Event) => void; options?: AddEventListenerOptions | boolean }>
+  > = {}
   constructor(opts: HTMLElement | string | elOpts, verbose: boolean = false) {
     this.log = new logger(verbose ? logLevel.debug : logLevel.none, 'element')
 
@@ -355,19 +358,27 @@ export class el {
   // }
 
   /*** Events ***/
-  on(event: string, cb: (ev: Event) => void) {
+  on(
+    event: string,
+    cb: (ev: Event) => void,
+    options?: AddEventListenerOptions | boolean,
+  ) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
     if (!this.listeners[event]) {
       this.listeners[event] = []
     }
-    this.listeners[event].push(cb)
-    this.el.addEventListener(event, cb)
+    this.listeners[event].push({ cb, options })
+    this.el.addEventListener(event, cb, options)
     return this
   }
-  listen(event: string, cb: (ev: Event) => void) {
-    return this.on(event, cb)
+  listen(
+    event: string,
+    cb: (ev: Event) => void,
+    options?: AddEventListenerOptions | boolean,
+  ) {
+    return this.on(event, cb, options)
   }
   removeListeners(event: string) {
     if (!this.el) {
@@ -376,8 +387,9 @@ export class el {
     if (!this.listeners[event]) {
       return this
     }
-    for (const cb of this.listeners[event]) {
-      this.el.removeEventListener(event, cb)
+    // pass options back so the `capture` flag matches the registration
+    for (const { cb, options } of this.listeners[event]) {
+      this.el.removeEventListener(event, cb, options)
     }
     this.listeners[event] = []
     return this
