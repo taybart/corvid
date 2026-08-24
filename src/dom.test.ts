@@ -5,7 +5,7 @@ import * as dom from './dom'
 describe('dom', () => {
   test('create element', () => {
     const div = new dom.el({
-      type: 'div',
+      tag: 'div',
       id: 'test',
       content: 'hopefully this passes!',
       parent: window.document.body,

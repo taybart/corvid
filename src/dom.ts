@@ -75,12 +75,12 @@ export function els(query: string, verbose: boolean = false) {
 type elOpts = {
   element?: HTMLElement
   query?: string
-  type?: string
+  tag?: string
   content?: any
   class?: string | string[]
   style?: Object
   id?: string
-  parent?: HTMLElement | el
+  parent?: string | HTMLElement | el
   attrs?: Object
 }
 export class el {
@@ -104,7 +104,7 @@ export class el {
     }
     // prettier-ignore
     const {
-      query, element, type, class: styleClass, style, id, content, parent, attrs,
+      query, element, tag, class: styleClass, style, id, content, parent, attrs,
     } = opts as elOpts
     if (query) {
       this.log.debug(`using query: ${query}`)
@@ -116,12 +116,12 @@ export class el {
     } else if (element) {
       this.log.debug(`using existing element: ${element}`)
       this.el = element
-    } else if (type) {
-      this.query = type
-      this.log.debug(`creating element: ${type}`)
-      this.el = document.createElement(type)
+    } else if (tag) {
+      this.query = tag
+      this.log.debug(`creating element: ${tag}`)
+      this.el = document.createElement(tag)
     } else {
-      throw new Error('no query or type provided')
+      throw new Error('no query or tag provided')
     }
     if (this.el) {
       if (id) {
@@ -146,7 +146,12 @@ export class el {
       }
       if (parent) {
         this.log.debug(`adding to parent`)
-        parent.appendChild(this.el)
+        let p: any = parent
+        if (typeof parent == 'string') {
+          this.log.debug(`parent query: ${parent}`)
+          p = document.querySelector(parent)
+        }
+        p.appendChild(this.el)
       }
     }
     if (attrs) {
@@ -238,10 +243,39 @@ export class el {
     }
     return this
   }
+  html(content: string) {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    this.el.innerHTML = content
+  }
   src(url: string) {
     if (this.el && 'src' in this.el) {
       this.el.src = url
     }
+    return this
+  }
+  attrs(attrs: Object) {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    for (const [k, v] of Object.entries(attrs)) {
+      this.el.setAttribute(k, v)
+    }
+    return this
+  }
+  attr(key: string, val: string) {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    this.el.setAttribute(key, val)
+    return this
+  }
+  removeAttr(key: string) {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    this.el.removeAttribute(key)
     return this
   }
 
@@ -298,33 +332,27 @@ export class el {
     return this
   }
   /*** Templates ***/
-  html(content: string) {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
-    this.el.innerHTML = content
-  }
-  render(vars = {}) {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
-    try {
-      return interpolate(this.el.innerHTML, vars)
-    } catch (e) {
-      throw new Error(`could not render template ${this.query}: ${e}`)
-    }
-  }
-  // TODO: maybe should return first node in template as el
-  appendTemplate(template: el, vars: any) {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
-    if (!template.el) {
-      throw new Error(`template does not contain element`)
-    }
-    const tmpl = template.render(vars)
-    this.el.insertAdjacentHTML('beforeend', tmpl)
-  }
+  // render(vars = {}) {
+  //   if (!this.el) {
+  //     throw new Error(`no element from query: ${this.query}`)
+  //   }
+  //   try {
+  //     return interpolate(this.el.innerHTML, vars)
+  //   } catch (e) {
+  //     throw new Error(`could not render template ${this.query}: ${e}`)
+  //   }
+  // }
+  // // TODO: maybe should return first node in template as el
+  // appendTemplate(template: el, vars: any) {
+  //   if (!this.el) {
+  //     throw new Error(`no element from query: ${this.query}`)
+  //   }
+  //   if (!template.el) {
+  //     throw new Error(`template does not contain element`)
+  //   }
+  //   const tmpl = template.render(vars)
+  //   this.el.insertAdjacentHTML('beforeend', tmpl)
+  // }
 
   /*** Events ***/
   on(event: string, cb: (ev: Event) => void) {
