@@ -1,6 +1,6 @@
 {
   "name": "@taybart/corvid",
-  "version": "0.2.31",
+  "version": "0.2.0",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
