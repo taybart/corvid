@@ -89,7 +89,10 @@ export class el {
   log: logger
   listeners: Record<
     string,
-    Array<{ cb: (ev: Event) => void; options?: AddEventListenerOptions | boolean }>
+    Array<{
+      cb: (ev: Event) => void
+      options?: AddEventListenerOptions | boolean
+    }>
   > = {}
   constructor(opts: HTMLElement | string | elOpts, verbose: boolean = false) {
     this.log = new logger(verbose ? logLevel.debug : logLevel.none, 'element')
@@ -203,31 +206,40 @@ export class el {
     parent.appendChild(this.el)
     return this
   }
-  // For compatibility, should use child
+  append(ch: HTMLElement | el | string) {
+    return this.child(ch)
+  }
   appendChild(ch: HTMLElement | el) {
     return this.child(ch)
   }
-  child(ch: HTMLElement | el) {
+  child(ch: HTMLElement | el | string) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
-    if (ch instanceof el) {
+    if (typeof ch === 'string') {
+      this.el.append(ch)
+    } else if (ch instanceof el) {
       this.el.appendChild(ch!.el!)
     } else {
       this.el.appendChild(ch)
     }
     return this
   }
-  prependChild(ch: HTMLElement | el) {
+  prepend(ch: HTMLElement | el | string) {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
-    if (ch instanceof el) {
+    if (typeof ch === 'string') {
+      this.el.prepend(ch)
+    } else if (ch instanceof el) {
       this.el.prepend(ch!.el!)
     } else {
       this.el.prepend(ch)
     }
     return this
+  }
+  prependChild(ch: HTMLElement | el | string) {
+    return this.prepend(ch)
   }
   empty() {
     if (this.el) {

@@ -15,12 +15,14 @@ export function render(style: Object): string {
   return s
 }
 
-export function inject(className: string, style: Object): string {
-  const existing = document.getElementById(`corvid-injected-${className}`)
+export function inject(selector: string, style: Object): string {
+  const existing = document.getElementById(
+    `corvid-injected-${encodeURIComponent(selector)}`,
+  )
   if (existing) existing.remove()
   const injected = document.createElement('style')
-  injected.id = `corvid-injected-${className}`
-  let s = `.${className} {\n`
+  injected.id = `corvid-injected-${encodeURIComponent(selector)}`
+  let s = `${selector} {\n`
   Object.entries(style).forEach(([k, v]) => (s += `${toKebab(k)}: ${v};\n`))
   s += '}'
   injected.textContent = s
