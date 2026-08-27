@@ -71,8 +71,26 @@ export function els(query: string, verbose: boolean = false) {
   })
 }
 
+/**
+ * Define a custom element. Defining the same name with the same class again is a
+ * no-op rather than a `NotSupportedError`, so a double import or an HMR reload
+ * does not blow up; a *different* class on a taken name is still an error.
+ */
+export function registerElement(name: string, ctor: CustomElementConstructor) {
+  const existing = customElements.get(name)
+  if (existing) {
+    if (existing !== ctor) {
+      throw new Error(
+        `custom element ${name} is already registered by ${existing.name}`,
+      )
+    }
+    return
+  }
+  customElements.define(name, ctor)
+}
+
 /*** element ***/
-type elOpts = {
+export type elOpts = {
   element?: HTMLElement
   query?: string
   tag?: string
@@ -172,7 +190,7 @@ export class el {
   }
 
   /*** dom manipulation ***/
-  value(update?: string): string | el {
+  value(update?: string): string | this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -199,20 +217,20 @@ export class el {
     )
     return ''
   }
-  parent(parent: HTMLElement | el) {
+  parent(parent: HTMLElement | el): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
     parent.appendChild(this.el)
     return this
   }
-  append(ch: HTMLElement | el | string) {
+  append(ch: HTMLElement | el | string): this {
     return this.child(ch)
   }
-  appendChild(ch: HTMLElement | el) {
+  appendChild(ch: HTMLElement | el): this {
     return this.child(ch)
   }
-  child(ch: HTMLElement | el | string) {
+  child(ch: HTMLElement | el | string): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -225,7 +243,7 @@ export class el {
     }
     return this
   }
-  prepend(ch: HTMLElement | el | string) {
+  prepend(ch: HTMLElement | el | string): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -238,16 +256,16 @@ export class el {
     }
     return this
   }
-  prependChild(ch: HTMLElement | el | string) {
+  prependChild(ch: HTMLElement | el | string): this {
     return this.prepend(ch)
   }
-  empty() {
+  empty(): this {
     if (this.el) {
       this.el.innerHTML = ''
     }
     return this
   }
-  content(content: any, { text = false }: { text?: boolean } = {}) {
+  content(content: any, { text = false }: { text?: boolean } = {}): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -258,19 +276,20 @@ export class el {
     }
     return this
   }
-  html(content: string) {
+  html(content: string): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
     this.el.innerHTML = content
+    return this
   }
-  src(url: string) {
+  src(url: string): this {
     if (this.el && 'src' in this.el) {
       this.el.src = url
     }
     return this
   }
-  attrs(attrs: Object) {
+  attrs(attrs: Object): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -279,14 +298,14 @@ export class el {
     }
     return this
   }
-  attr(key: string, val: string) {
+  attr(key: string, val: string): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
     this.el.setAttribute(key, val)
     return this
   }
-  removeAttr(key: string) {
+  removeAttr(key: string): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -295,7 +314,7 @@ export class el {
   }
 
   /*** Style ***/
-  style(update: Object | string, stringify = false) {
+  style(update: Object | string, stringify = false): this {
     if (this.el) {
       if (typeof update === 'string') {
         this.el.style = update
@@ -305,7 +324,7 @@ export class el {
             // @ts-ignore
             this.el.style[k] = v
           }
-          return
+          return this
         }
         const s = style.render(update)
         this.log.debug(`set style: ${this.el.style} -> ${s}`)
@@ -320,7 +339,7 @@ export class el {
     }
     return this.el.classList.contains(className)
   }
-  addClass(className: string | string[]) {
+  addClass(className: string | string[]): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -333,7 +352,7 @@ export class el {
     }
     return this
   }
-  removeClass(className: string | string[]) {
+  removeClass(className: string | string[]): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -346,35 +365,13 @@ export class el {
     }
     return this
   }
-  /*** Templates ***/
-  // render(vars = {}) {
-  //   if (!this.el) {
-  //     throw new Error(`no element from query: ${this.query}`)
-  //   }
-  //   try {
-  //     return interpolate(this.el.innerHTML, vars)
-  //   } catch (e) {
-  //     throw new Error(`could not render template ${this.query}: ${e}`)
-  //   }
-  // }
-  // // TODO: maybe should return first node in template as el
-  // appendTemplate(template: el, vars: any) {
-  //   if (!this.el) {
-  //     throw new Error(`no element from query: ${this.query}`)
-  //   }
-  //   if (!template.el) {
-  //     throw new Error(`template does not contain element`)
-  //   }
-  //   const tmpl = template.render(vars)
-  //   this.el.insertAdjacentHTML('beforeend', tmpl)
-  // }
 
   /*** Events ***/
   on(
     event: string,
     cb: (ev: Event) => void,
     options?: AddEventListenerOptions | boolean,
-  ) {
+  ): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -389,10 +386,10 @@ export class el {
     event: string,
     cb: (ev: Event) => void,
     options?: AddEventListenerOptions | boolean,
-  ) {
+  ): this {
     return this.on(event, cb, options)
   }
-  removeListeners(event: string) {
+  removeListeners(event: string): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -405,6 +402,135 @@ export class el {
     }
     this.listeners[event] = []
     return this
+  }
+}
+
+/**
+ * Create an element and return the node itself, not an `el` wrapper. Takes the
+ * same options as `el`, so a custom element comes back ready to talk to:
+ *
+ *   const form = create({ tag: 'x-search-form', parent: '#query-form' })
+ *   form.onSubmit(...)   // its own methods, no `.el` hop
+ *
+ * Wrap it later with `new el(node)` if you want the chainable helpers.
+ */
+export function create<T extends HTMLElement = HTMLElement>(
+  opts: elOpts,
+  verbose: boolean = false,
+): T {
+  const node = new el(opts, verbose).el
+  if (!node) {
+    throw new Error(
+      `could not create element: ${opts.tag ?? opts.query ?? '?'}`,
+    )
+  }
+  return node as T
+}
+
+/*** component ***/
+
+/**
+ * Base class for custom elements. It handles registration, the component's
+ * stylesheet, and a mount hook
+ *   class SearchForm extends component {
+ *     static tag = 'x-search-form'
+ *     static styles = { input: { border: 'none' } }
+ *     input = create({ tag: 'input' })
+ *     mount() {
+ *       this.input.addEventListener('keydown', (e) => ...)
+ *       this.append(this.input)
+ *     }
+ *   }
+ *   SearchForm.register()
+ */
+export class component extends HTMLElement {
+  /** the name to register as; must contain a hyphen */
+  static tag = ''
+  /**
+   * Injected once at `register()`, scoped to the tag. Written *relative* to the
+   * component — no tag selector of its own — so it always matches whatever name
+   * the class actually registered under.
+   */
+  static styles: style.declarations | null = null
+
+  #mounted = false
+  #pendingAttrs: [string, string | null, string | null][] = []
+
+  /**
+   * Inject this component's styles and define it. Idempotent, so calling it
+   * twice (or after an HMR reload) is harmless.
+   * @param tag - overrides `static tag`
+   */
+  static register(tag?: string) {
+    const name = tag ?? this.tag
+    if (!name) {
+      throw new Error(
+        `${this.name}: nothing to register as, set \`static tag = 'x-...'\``,
+      )
+    }
+    // a subclass with no `tag` of its own inherits its parent's, which would
+    // otherwise silently no-op against the parent's registration
+    if (!name.includes('-')) {
+      throw new Error(
+        `${this.name}: '${name}' is not a valid custom element name, it needs a hyphen`,
+      )
+    }
+    if (this.styles) {
+      style.inject(name, this.styles)
+    }
+    registerElement(name, this as unknown as CustomElementConstructor)
+  }
+
+  /**
+   * Called once, the first time the element is connected. Build the subtree and
+   * wire listeners here — a custom element cannot give itself children before
+   * it is connected, and `connectedCallback` runs again on every re-insertion.
+   */
+  mount() {}
+  /**
+   * Called every time the element is disconnected. Listeners on this element
+   * and on children it owns go away with it; undo document/window listeners
+   * here, using the removers `on()` and `onKey()` hand back.
+   */
+  unmount() {}
+  /**
+   * Called for every change to an attribute named in `static observedAttributes`,
+   * and never before `mount()` — changes that arrive earlier (anything set at
+   * creation or parse time, which the platform reports *before*
+   * `connectedCallback`) are held and delivered in order right after mount.
+   *
+   * Attributes are strings. For structured data use a property with a setter
+   * that re-renders; an object put through `setAttribute` becomes
+   * "[object Object]".
+   */
+  onAttr(_name: string, _value: string | null, _prev: string | null) {}
+
+  // A subclass that overrides these must call super, or the hooks stop firing.
+  connectedCallback() {
+    if (!this.#mounted) {
+      this.#mounted = true
+      this.mount()
+      const queued = this.#pendingAttrs
+      this.#pendingAttrs = []
+      for (const [name, value, prev] of queued) {
+        this.onAttr(name, value, prev)
+      }
+    }
+  }
+  disconnectedCallback() {
+    this.unmount()
+  }
+  attributeChangedCallback(
+    name: string,
+    prev: string | null,
+    value: string | null,
+  ) {
+    if (prev === value) return
+    if (!this.#mounted) {
+      this.#pendingAttrs.push([name, value, prev])
+      return
+    }
+    this.onAttr(name, value, prev)
   }
 }
 
@@ -424,4 +550,4 @@ export function interpolate(str: string, params: Object): string {
   )(...vals)
 }
 
-export default { el, els, ready, on, onKey }
+export default { el, els, create, component, registerElement, ready, on, onKey }
