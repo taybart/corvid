@@ -116,6 +116,10 @@ describe('component', () => {
       'disconnectedCallback',
       'mount',
       'onAttr',
+      // `root` is the one addition: a component that appends to it works the
+      // same shadowed or not, which is what keeps `static shadow` a one-line
+      // opt-in rather than a rewrite
+      'root',
       'unmount',
     ])
   })
@@ -265,5 +269,55 @@ describe('component attributes', () => {
     // why structured data wants a property instead
     const node = dom.create({ tag: 'div', attrs: { media: { title: 'Heat' } } })
     expect(node.getAttribute('media')).toBe('[object Object]')
+  })
+})
+
+describe('shadow components', () => {
+  test('children go in the root, out of reach of the document', () => {
+    class Shadowed extends dom.component {
+      static tag = 'x-shadowed'
+      static shadow: ShadowRootInit = { mode: 'open' }
+      static styles = { '.inner': { color: 'red' } }
+      mount() {
+        this.root.append(dom.create({ tag: 'div', class: 'inner' }))
+      }
+    }
+    Shadowed.register()
+    const node = new Shadowed()
+    document.body.appendChild(node)
+
+    expect(node.shadowRoot).not.toBeNull()
+    expect(node.root).toBe(node.shadowRoot)
+    // the whole point: a document query cannot see in
+    expect(node.querySelector('.inner')).toBeNull()
+    expect(document.querySelector('.inner')).toBeNull()
+    expect(node.root.querySelector('.inner')).not.toBeNull()
+  })
+
+  test('without the opt-in, root is the element and nothing changes', () => {
+    class Plain extends dom.component {
+      static tag = 'x-plain-root'
+      mount() {
+        this.root.append(dom.create({ tag: 'div', class: 'inner' }))
+      }
+    }
+    Plain.register()
+    const node = new Plain()
+    document.body.appendChild(node)
+    expect(node.shadowRoot).toBeNull()
+    expect(node.root).toBe(node)
+    expect(node.querySelector('.inner')).not.toBeNull()
+  })
+
+  test('a shadowed component keeps its styles out of the document', () => {
+    const before = document.adoptedStyleSheets.length
+    class Scoped extends dom.component {
+      static tag = 'x-scoped'
+      static shadow: ShadowRootInit = { mode: 'open' }
+      static styles = { color: 'red' }
+    }
+    Scoped.register()
+    // injected into the root, never onto the document
+    expect(document.adoptedStyleSheets.length).toBe(before)
   })
 })

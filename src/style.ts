@@ -54,6 +54,84 @@ function splitSelectors(selector: string): string[] {
 }
 
 /**
+ * From inside its own tree the shadow host is *featureless*: it matches
+ * `:host` and `:host(...)` and nothing else. A compound on it is not an error,
+ * it is silently inert — `:host[open]`, `:host:hover` and even
+ * `:host(.a):hover` match nothing at all, where `:host([open])`,
+ * `:host(:hover)` and `:host(.a:hover)` work.
+ *
+ * Splicing `&` onto a `:host` parent produces exactly the inert shape, so fold
+ * whatever landed on it *into* the parens — merging with an argument already
+ * there, since appending to one is just as dead as appending to a bare `:host`.
+ *
+ * A pseudo-*element* stays outside: `:host(::before)` is invalid, while
+ * `:host::before` is the way to write it.
+ */
+function hostCompound(selector: string): string {
+  if (!selector.startsWith(':host')) return selector
+
+  let i = ':host'.length
+  let inner = ''
+
+  // step over an existing argument, tracking quotes so a `)` inside an
+  // attribute value cannot end it early
+  if (selector[i] === '(') {
+    const open = i
+    let depth = 0
+    let quote = ''
+    while (i < selector.length) {
+      const ch = selector[i]
+      if (quote) {
+        if (ch === quote) quote = ''
+      } else if (ch === '"' || ch === "'") {
+        quote = ch
+      } else if (ch === '(') {
+        depth++
+      } else if (ch === ')') {
+        depth--
+        if (depth === 0) {
+          i++
+          break
+        }
+      }
+      i++
+    }
+    inner = selector.slice(open + 1, i - 1)
+  }
+
+  // then whatever `&` spliced on after it
+  const start = i
+  let depth = 0
+  let quote = ''
+  while (i < selector.length) {
+    const ch = selector[i]
+    if (quote) {
+      if (ch === quote) quote = ''
+    } else if (ch === '"' || ch === "'") {
+      quote = ch
+    } else if (
+      depth === 0 &&
+      (ch === ' ' || ch === '>' || ch === '+' || ch === '~')
+    ) {
+      // a combinator ends the compound
+      break
+    } else if (depth === 0 && ch === ':' && selector[i + 1] === ':') {
+      // and so does a pseudo-element
+      break
+    } else if (ch === '(' || ch === '[') {
+      depth++
+    } else if (ch === ')' || ch === ']') {
+      depth--
+    }
+    i++
+  }
+
+  const compound = selector.slice(start, i)
+  if (!compound) return selector
+  return `:host(${inner}${compound})${selector.slice(i)}`
+}
+
+/**
  * Resolve a nested selector against its parents. `&` splices onto the parent
  * (`&:focus` -> `x-form:focus`, `.dark &` -> `.dark x-form`), anything else
  * nests as a descendant (`input` -> `x-form input`).
@@ -62,7 +140,13 @@ function resolve(parents: string[], selector: string): string[] {
   const out: string[] = []
   for (const parent of parents) {
     for (const part of splitSelectors(selector)) {
-      out.push(part.includes('&') ? part.replaceAll('&', parent) : `${parent} ${part}`)
+      out.push(
+        hostCompound(
+          part.includes('&')
+            ? part.replaceAll('&', parent)
+            : `${parent} ${part}`,
+        ),
+      )
     }
   }
   return out
@@ -200,6 +284,44 @@ export function inject(
   node.textContent = rules
   sheets.set(key, node)
   return rules
+}
+
+/**
+ * Compile `style` for a shadow root, rooted at `:host`.
+ *
+ * Hands back a constructable sheet where the platform has them — one per key,
+ * shared by every instance of the component, so a thousand cards cost one
+ * sheet — and the css text otherwise, for the caller to put in a `<style>`
+ * inside the root. Re-compiling an existing key replaces that sheet's contents
+ * in place, so live instances pick the change up (which is what makes an HMR
+ * reload work rather than stack a second sheet).
+ *
+ * Document styles do not reach into a shadow tree, so this is the only way a
+ * shadowed component gets styled at all.
+ */
+export function shadowSheet(
+  key: string,
+  style: declarations,
+): CSSStyleSheet | string {
+  const rules = css(':host', style)
+  if (
+    typeof CSSStyleSheet === 'undefined' ||
+    !('replaceSync' in CSSStyleSheet.prototype) ||
+    typeof ShadowRoot === 'undefined' ||
+    !('adoptedStyleSheets' in ShadowRoot.prototype)
+  ) {
+    return rules
+  }
+  const sheets = registry()
+  const existing = sheets.get(key)
+  if (existing && 'replaceSync' in existing) {
+    existing.replaceSync(rules)
+    return existing
+  }
+  const sheet = new CSSStyleSheet()
+  sheet.replaceSync(rules)
+  sheets.set(key, sheet)
+  return sheet
 }
 
 /**

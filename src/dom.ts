@@ -276,11 +276,19 @@ export class el {
     }
     return this
   }
-  html(content: string): this {
+  html(content: string | HTMLElement | el): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
-    this.el.innerHTML = content
+    if (typeof content === 'string') {
+      this.el.innerHTML = content
+    } else if (content instanceof el) {
+      if (content.el) {
+        this.el.replaceChildren(content.el)
+      }
+    } else {
+      this.el.replaceChildren(content)
+    }
     return this
   }
   src(url: string): this {
@@ -338,6 +346,17 @@ export class el {
       throw new Error(`no element from query: ${this.query}`)
     }
     return this.el.classList.contains(className)
+  }
+  toggleClass(className: string): this {
+    if (!this.el) {
+      throw new Error(`no element from query: ${this.query}`)
+    }
+    if (this.el.classList.contains(className)) {
+      this.el.classList.remove(className)
+    } else {
+      this.el.classList.add(className)
+    }
+    return this
   }
   addClass(className: string | string[]): this {
     if (!this.el) {
@@ -429,6 +448,15 @@ export function create<T extends HTMLElement = HTMLElement>(
 
 /*** component ***/
 
+export function registerComponents(
+  components: (typeof component)[],
+  verbose = false,
+) {
+  for (const c of components) {
+    c.register(undefined, verbose)
+  }
+}
+
 /**
  * Base class for custom elements. It handles registration, the component's
  * stylesheet, and a mount hook
@@ -443,6 +471,10 @@ export function create<T extends HTMLElement = HTMLElement>(
  *   }
  *   SearchForm.register()
  */
+// Compiled at register(), read in the constructor. Keyed by the class so a
+// subclass that declares its own styles gets its own sheet.
+const sheets = new WeakMap<Function, CSSStyleSheet | string>()
+
 export class component extends HTMLElement {
   /** the name to register as; must contain a hyphen */
   static tag = ''
@@ -452,16 +484,62 @@ export class component extends HTMLElement {
    * the class actually registered under.
    */
   static styles: style.declarations | null = null
+  /**
+   * Opt in to a shadow root: `static shadow = { mode: 'open' }`.
+   *
+   * Without it a component's `styles` are injected at document level and
+   * compile to plain descendant selectors, so an outer component's `ul` or
+   * `.meta` rule reaches an inner component's markup — and only has to name a
+   * property the inner rule leaves unset to take effect. A shadow root ends
+   * that by construction, in both directions.
+   *
+   * What changes for the component: put children in `this.root`, not `this`.
+   * Two things to know before turning it on —
+   *
+   * - light-dom children are not rendered unless the root has a `<slot>`, so a
+   *   component that takes `content` needs one
+   * - a nested custom element loses its document styles inside the root, so
+   *   anything rendered in here has to be shadowed too
+   * DOCS: https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM
+   */
+  static shadow: ShadowRootInit | null = null
 
   #mounted = false
+  #root: ShadowRoot | null = null
   #pendingAttrs: [string, string | null, string | null][] = []
+
+  constructor() {
+    super()
+    const ctor = this.constructor as typeof component
+    if (!ctor.shadow) return
+    this.#root = this.attachShadow(ctor.shadow)
+    const sheet = sheets.get(ctor)
+    if (sheet === undefined) return
+    if (typeof sheet === 'string') {
+      // no constructable stylesheets: every root pays for its own <style>
+      const node = document.createElement('style')
+      node.textContent = sheet
+      this.#root.append(node)
+    } else {
+      this.#root.adoptedStyleSheets = [...this.#root.adoptedStyleSheets, sheet]
+    }
+  }
+
+  /**
+   * Where this component's children belong: its shadow root when it has one,
+   * otherwise the element itself. Use it instead of `this` for `append`,
+   * `replaceChildren` and `querySelector`, and the component works either way.
+   */
+  get root(): ShadowRoot | this {
+    return this.#root ?? this
+  }
 
   /**
    * Inject this component's styles and define it. Idempotent, so calling it
    * twice (or after an HMR reload) is harmless.
    * @param tag - overrides `static tag`
    */
-  static register(tag?: string) {
+  static register(tag?: string, verbose = false) {
     const name = tag ?? this.tag
     if (!name) {
       throw new Error(
@@ -476,7 +554,18 @@ export class component extends HTMLElement {
       )
     }
     if (this.styles) {
-      style.inject(name, this.styles)
+      // a shadowed component's sheet goes in its root, not the document —
+      // document rules do not cross the boundary, so injecting here would put
+      // the styles somewhere they can never apply
+      if (this.shadow) {
+        sheets.set(this, style.shadowSheet(`shadow:${name}`, this.styles))
+      } else {
+        style.inject(name, this.styles)
+      }
+    }
+    // FIXME: this should use the regular logger.debug
+    if (verbose) {
+      console.log(`registering ${name}`)
     }
     registerElement(name, this as unknown as CustomElementConstructor)
   }

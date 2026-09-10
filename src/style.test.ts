@@ -113,3 +113,72 @@ describe('style.inject', () => {
     expect(document.adoptedStyleSheets.length).toBe(0)
   })
 })
+
+describe('shadow sheets', () => {
+  test('a compound on :host is folded into its functional form', () => {
+    // `:host[open]` and `:host:hover` are silently inert in a real browser;
+    // only `:host(...)` matches the host
+    const out = style.css(':host', {
+      color: 'red',
+      '&:hover': { color: 'blue' },
+      '&[aria-expanded="true"]': { color: 'green' },
+      '&.picked': { color: 'teal' },
+    })
+    expect(out).toContain(':host {')
+    expect(out).toContain(':host(:hover)')
+    expect(out).toContain(':host([aria-expanded="true"])')
+    expect(out).toContain(':host(.picked)')
+    expect(out).not.toMatch(/:host[.:[][^(]/)
+  })
+
+  test('the compound stops at a combinator', () => {
+    const out = style.css(':host', {
+      '&[aria-expanded="true"]': { '> .detail': { display: 'flex' } },
+    })
+    expect(out).toContain(':host([aria-expanded="true"]) > .detail')
+  })
+
+  test('a nested & merges into an argument already there', () => {
+    // `:host(.a):hover` is as dead as `:host:hover`; it all has to go inside
+    const out = style.css(':host', {
+      '&.destructive': {
+        color: 'red',
+        '&:hover': { color: 'blue' },
+      },
+    })
+    expect(out).toContain(':host(.destructive)')
+    expect(out).toContain(':host(.destructive:hover)')
+    expect(out).not.toContain(':host(.destructive):hover')
+  })
+
+  test('a quoted paren does not end the argument early', () => {
+    const out = style.css(':host', {
+      '&[data-x=")"]': { '&:hover': { color: 'red' } },
+    })
+    expect(out).toContain(':host([data-x=")"]:hover)')
+  })
+
+  test('a pseudo-element stays outside the parens', () => {
+    // `:host(::before)` is invalid; `:host::before` is how it is written
+    const out = style.css(':host', { '&::before': { content: '""' } })
+    expect(out).toContain(':host::before')
+  })
+
+  test('descendants need no host prefix of their own', () => {
+    const out = style.css(':host', { '.head': { display: 'flex' } })
+    expect(out).toContain(':host .head')
+  })
+
+  test('a tag root is left alone', () => {
+    const out = style.css('x-thing', { '&:hover': { color: 'red' } })
+    expect(out).toContain('x-thing:hover')
+    expect(out).not.toContain(':host')
+  })
+
+  test('one sheet per key, replaced in place on recompile', () => {
+    const first = style.shadowSheet('shadow:x-s', { color: 'red' })
+    const again = style.shadowSheet('shadow:x-s', { color: 'blue' })
+    expect(again).toBe(first)
+    expect((again as CSSStyleSheet).cssRules[0].cssText).toContain('blue')
+  })
+})
