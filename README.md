@@ -29,8 +29,8 @@ dom.ready(() => {
 
 
     // create new elements
-    new dom.el({
-        type: 'div',
+    dom.create({
+        tag: 'div',
         id: 'hair-color',
         class: 'hair user-info',
         content: 'blue',
@@ -42,19 +42,25 @@ dom.ready(() => {
     dom.onKey('E', ({ ctrl, alt, meta, shift }) => {
         console.log('E pressed')
     })
-
-    /*
-     * Given a template:
-     * <template id="tmpl-test">
-     *  <div> hello ${name} </div>
-     * </template>
-     */
-     const tmpl = new dom.el('#tmpl-test')
-     // append template to el
-     username.appendTemplate(tmpl, { name: 'corvid' })
-     // or just set content
-     document.body.innerHTML = tmpl.render({ name: 'corvid' })
 })
+
+class Card extends dom.component {
+    static tag = 'x-card'
+    static observedAttributes = ['name']
+    // will be applied to all instances of this class in adopted stylesheet
+    static styles = {
+        display: 'flex',
+        flexDirection: 'column',
+    }
+    // component should use a shadow dom, styles will be applied to shadow root if this is set
+    static shadow = {open: 'true'}
+    mount() {
+    }
+    // called for change to an attribute named in `static observedAttributes`
+    onAttr(name, value, prev) {
+    }
+}
+Card.register() // register the component
 ```
 
 ### LocalStorage
