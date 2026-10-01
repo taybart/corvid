@@ -217,12 +217,16 @@ export class request {
             _recurselevel: _recurselevel + 1,
           })
         }
-      } else {
-        throw {
-          message: `bad wesponse ${res.status} !== ${expect}, body: ${body}`,
-          status: res.status,
-          body,
-        }
+      }
+      // Either not a retryable 401, or onUnauthorized couldn't get a new
+      // token — either way this request is failing, and `body` above
+      // already consumed the response: falling through to read it again
+      // below (res.json()/res.text()) throws "body stream already read"
+      // instead of this clean, typed error.
+      throw {
+        message: `bad wesponse ${res.status} !== ${expect}, body: ${body}`,
+        status: res.status,
+        body,
       }
     }
     const ct = res.headers.get('content-type') ?? ''
