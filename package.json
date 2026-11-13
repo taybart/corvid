@@ -1,6 +1,6 @@
 {
   "name": "@taybart/corvid",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "type": "module",
   "sideEffects": false,
   "license": "BSD-3-Clause",
