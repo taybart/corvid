@@ -109,10 +109,7 @@ function hostCompound(selector: string): string {
       if (ch === quote) quote = ''
     } else if (ch === '"' || ch === "'") {
       quote = ch
-    } else if (
-      depth === 0 &&
-      (ch === ' ' || ch === '>' || ch === '+' || ch === '~')
-    ) {
+    } else if (depth === 0 && (ch === ' ' || ch === '>' || ch === '+' || ch === '~')) {
       // a combinator ends the compound
       break
     } else if (depth === 0 && ch === ':' && selector[i + 1] === ':') {
@@ -141,11 +138,7 @@ function resolve(parents: string[], selector: string): string[] {
   for (const parent of parents) {
     for (const part of splitSelectors(selector)) {
       out.push(
-        hostCompound(
-          part.includes('&')
-            ? part.replaceAll('&', parent)
-            : `${parent} ${part}`,
-        ),
+        hostCompound(part.includes('&') ? part.replaceAll('&', parent) : `${parent} ${part}`),
       )
     }
   }
@@ -156,11 +149,7 @@ function resolve(parents: string[], selector: string): string[] {
  * Flatten a (possibly nested) declaration block into css rules. Kebabs keys,
  * so backgroundColor -> background-color.
  */
-function compile(
-  parents: string[],
-  decls: declarations,
-  indent = '',
-): string[] {
+function compile(parents: string[], decls: declarations, indent = ''): string[] {
   const blocks: string[] = []
   const props: string[] = []
   const nested: [string, declarations][] = []
@@ -173,9 +162,7 @@ function compile(
     }
   }
   if (props.length) {
-    blocks.push(
-      `${indent}${parents.join(', ')} {\n${props.join('\n')}\n${indent}}`,
-    )
+    blocks.push(`${indent}${parents.join(', ')} {\n${props.join('\n')}\n${indent}}`)
   }
   for (const [selector, block] of nested) {
     // at-rules wrap their contents, keeping the same parent selectors —
@@ -183,9 +170,7 @@ function compile(
     if (selector.startsWith('@')) {
       const inner = selector.startsWith('@keyframes')
         ? Object.entries(block).flatMap(([step, d]) =>
-            d !== null && typeof d === 'object'
-              ? compile([step], d, `${indent}  `)
-              : [],
+            d !== null && typeof d === 'object' ? compile([step], d, `${indent}  `) : [],
           )
         : compile(parents, block, `${indent}  `)
       if (inner.length) {
@@ -299,10 +284,7 @@ export function inject(
  * Document styles do not reach into a shadow tree, so this is the only way a
  * shadowed component gets styled at all.
  */
-export function shadowSheet(
-  key: string,
-  style: declarations,
-): CSSStyleSheet | string {
+export function shadowSheet(key: string, style: declarations): CSSStyleSheet | string {
   const rules = css(':host', style)
   if (
     typeof CSSStyleSheet === 'undefined' ||
@@ -333,9 +315,7 @@ export function eject(key: string) {
   const sheet = sheets.get(key)
   if (!sheet) return
   if ('replaceSync' in sheet) {
-    document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
-      (s) => s !== sheet,
-    )
+    document.adoptedStyleSheets = document.adoptedStyleSheets.filter((s) => s !== sheet)
   } else {
     sheet.remove()
   }
@@ -343,7 +323,7 @@ export function eject(key: string) {
 }
 
 /**
- * Check if the current theme is dark
+ * Check if the current theme is dark via css
  */
 export function isDarkMode(): boolean {
   return window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -354,13 +334,19 @@ export function isDarkMode(): boolean {
  * @param cb - Callback function when theme changes
  */
 export function onDarkMode(cb: (isDark: boolean) => void) {
-  window
-    .matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', (ev) => {
-      cb(ev.matches)
-    })
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (ev) => {
+    cb(ev.matches)
+  })
 }
 
+/**
+ * Switch between light and dark theme
+ * @param theme - 'light' or 'dark'
+ */
+export function theme(theme?: string) {
+  if (theme) document.documentElement.setAttribute('data-theme', theme)
+  return document.documentElement.getAttribute('data-theme')
+}
 /**
  * Switch between light and dark theme
  * @param theme - 'light' or 'dark'
@@ -396,9 +382,7 @@ export function gradient(start: color, end: color, value: number): string {
   value = Math.max(0, Math.min(100, value))
   // Calculate the color components based on the value
   const red = Math.round(start.red + ((end.red - start.red) * value) / 100)
-  const green = Math.round(
-    start.green + ((end.green - start.green) * value) / 100,
-  )
+  const green = Math.round(start.green + ((end.green - start.green) * value) / 100)
   const blue = Math.round(start.blue + ((end.blue - start.blue) * value) / 100)
   return `rgb(${red}, ${green}, ${blue})`
 }

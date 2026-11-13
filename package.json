@@ -3,6 +3,7 @@
   "version": "0.2.6",
   "type": "module",
   "sideEffects": false,
+  "license": "BSD-3-Clause",
   "main": "./dist/index.js",
   "exports": {
     ".": {
@@ -39,7 +40,7 @@
     },
     "./bundle": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/bundle/index.js"
+      "import": "./dist/bundle/corvid.bundle.js"
     }
   },
   "module": "./dist/index.js",
@@ -51,14 +52,17 @@
     "build": "rslib build",
     "dev": "rslib build --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "format": "biome format --write .",
+    "format:check": "biome format ."
   },
   "devDependencies": {
-    "@rslib/core": "^1.0.1",
+    "@biomejs/biome": "2.6.5",
+    "@rslib/core": "^1.0.6",
     "@testing-library/dom": "^10.4.2",
-    "@testing-library/jest-dom": "^7",
+    "@testing-library/jest-dom": "^7.0.1",
     "@types/jsdom": "^21.1.7",
-    "@types/node": "^24",
+    "@types/node": "^24.19.2",
     "happy-dom": "^18.0.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.7"

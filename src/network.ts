@@ -153,7 +153,7 @@ export class request {
     override.headers = override.headers || {}
     const headers: Record<string, string> = {
       ...this.opts.headers,
-      ...override.headers as Record<string, string>,
+      ...(override.headers as Record<string, string>),
     }
     // Let the browser set Content-Type automatically for multipart bodies
     if (body instanceof FormData) {
@@ -166,9 +166,10 @@ export class request {
         method: override.method || this.opts.method,
         credentials: this.opts.credentials,
         headers,
-        body: body instanceof FormData || body instanceof Blob || body instanceof ArrayBuffer
-          ? body
-          : JSON.stringify(body),
+        body:
+          body instanceof FormData || body instanceof Blob || body instanceof ArrayBuffer
+            ? body
+            : JSON.stringify(body),
       },
     }
   }

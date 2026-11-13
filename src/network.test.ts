@@ -3,9 +3,7 @@ import { request } from './network'
 
 describe('request.do', () => {
   test('a non-401 bad response throws the typed error, not a raw body-read failure', async () => {
-    const fetch = vi.fn().mockResolvedValue(
-      new Response('server exploded', { status: 500 }),
-    )
+    const fetch = vi.fn().mockResolvedValue(new Response('server exploded', { status: 500 }))
     const client = new request({ url: 'https://example.test', fetch })
     await expect(client.do({ path: '/x' })).rejects.toMatchObject({
       status: 500,
@@ -19,9 +17,7 @@ describe('request.do', () => {
   // which throws a generic "body stream already read" TypeError instead of
   // this call's own typed `{status, body}` error.
   test('a 401 whose refresh fails still throws the typed error', async () => {
-    const fetch = vi.fn().mockResolvedValue(
-      new Response('nope', { status: 401 }),
-    )
+    const fetch = vi.fn().mockResolvedValue(new Response('nope', { status: 401 }))
     const onUnauthorized = vi.fn().mockResolvedValue(false)
     const client = new request({ url: 'https://example.test', fetch, onUnauthorized })
 

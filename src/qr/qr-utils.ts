@@ -43,108 +43,110 @@ export class QRUtil {
     [6, 32, 58, 84, 110, 136, 162],
     [6, 26, 54, 82, 110, 138, 166],
     [6, 30, 58, 86, 114, 142, 170],
-  ];
+  ]
 
-  private static G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
-  private static G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0);
-  private static G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
+  private static G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0)
+  private static G18 =
+    (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0)
+  private static G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1)
 
   private static getBCHDigit(data: number): number {
-    let digit = 0;
+    let digit = 0
     while (data != 0) {
-      digit += 1;
-      data >>>= 1;
+      digit += 1
+      data >>>= 1
     }
-    return digit;
+    return digit
   }
 
   static getBCHTypeInfo(data: number): number {
-    let d = data << 10;
+    let d = data << 10
     while (this.getBCHDigit(d) - this.getBCHDigit(this.G15) >= 0) {
-      d ^= this.G15 << (this.getBCHDigit(d) - this.getBCHDigit(this.G15));
+      d ^= this.G15 << (this.getBCHDigit(d) - this.getBCHDigit(this.G15))
     }
-    return ((data << 10) | d) ^ this.G15_MASK;
+    return ((data << 10) | d) ^ this.G15_MASK
   }
 
   static getBCHTypeNumber(data: number): number {
-    let d = data << 12;
+    let d = data << 12
     while (this.getBCHDigit(d) - this.getBCHDigit(this.G18) >= 0) {
-      d ^= this.G18 << (this.getBCHDigit(d) - this.getBCHDigit(this.G18));
+      d ^= this.G18 << (this.getBCHDigit(d) - this.getBCHDigit(this.G18))
     }
-    return (data << 12) | d;
+    return (data << 12) | d
   }
 
   static getPatternPosition(typeNumber: number): number[] {
-    return this.PATTERN_POSITION_TABLE[typeNumber - 1];
+    return this.PATTERN_POSITION_TABLE[typeNumber - 1]
   }
 
   static getMaskFunction(maskPattern: number): (i: number, j: number) => boolean {
     switch (maskPattern) {
       case 0: // PATTERN000
-        return (i, j) => (i + j) % 2 == 0;
+        return (i, j) => (i + j) % 2 == 0
       case 1: // PATTERN001
-        return (i, j) => i % 2 == 0;
+        return (i, j) => i % 2 == 0
       case 2: // PATTERN010
-        return (i, j) => j % 3 == 0;
+        return (i, j) => j % 3 == 0
       case 3: // PATTERN011
-        return (i, j) => (i + j) % 3 == 0;
+        return (i, j) => (i + j) % 3 == 0
       case 4: // PATTERN100
-        return (i, j) => (Math.floor(i / 2) + Math.floor(j / 3)) % 2 == 0;
+        return (i, j) => (Math.floor(i / 2) + Math.floor(j / 3)) % 2 == 0
       case 5: // PATTERN101
-        return (i, j) => ((i * j) % 2) + ((i * j) % 3) == 0;
+        return (i, j) => ((i * j) % 2) + ((i * j) % 3) == 0
       case 6: // PATTERN110
-        return (i, j) => (((i * j) % 2) + ((i * j) % 3)) % 2 == 0;
+        return (i, j) => (((i * j) % 2) + ((i * j) % 3)) % 2 == 0
       case 7: // PATTERN111
-        return (i, j) => (((i * j) % 3) + ((i + j) % 2)) % 2 == 0;
+        return (i, j) => (((i * j) % 3) + ((i + j) % 2)) % 2 == 0
       default:
-        throw new Error('bad maskPattern:' + maskPattern);
+        throw new Error('bad maskPattern:' + maskPattern)
     }
   }
 
   static getErrorCorrectPolynomial(errorCorrectLength: number): any {
     // This will be implemented in the main generator file
-    throw new Error('Not implemented');
+    throw new Error('Not implemented')
   }
 
   static getLengthInBits(mode: number, type: number): number {
-    if (mode != 4 || type < 1 || type > 40) // 4 = MODE_8BIT_BYTE
-      throw new Error('mode: ' + mode + '; type: ' + type);
+    if (mode != 4 || type < 1 || type > 40)
+      // 4 = MODE_8BIT_BYTE
+      throw new Error('mode: ' + mode + '; type: ' + type)
 
-    return type < 10 ? 8 : 16;
+    return type < 10 ? 8 : 16
   }
 
   static getLostPoint(qrcode: any): number {
-    const moduleCount = qrcode.getModuleCount();
-    let lostPoint = 0;
+    const moduleCount = qrcode.getModuleCount()
+    let lostPoint = 0
 
     // LEVEL1
     for (let row = 0; row < moduleCount; row += 1) {
       for (let col = 0; col < moduleCount; col += 1) {
-        let sameCount = 0;
-        const dark = qrcode.isDark(row, col);
+        let sameCount = 0
+        const dark = qrcode.isDark(row, col)
 
         for (let r = -1; r <= 1; r += 1) {
           if (row + r < 0 || moduleCount <= row + r) {
-            continue;
+            continue
           }
 
           for (let c = -1; c <= 1; c += 1) {
             if (col + c < 0 || moduleCount <= col + c) {
-              continue;
+              continue
             }
 
             if (r == 0 && c == 0) {
-              continue;
+              continue
             }
 
             if (dark == qrcode.isDark(row + r, col + c)) {
-              sameCount += 1;
+              sameCount += 1
             }
           }
         }
 
         if (sameCount > 5) {
-          lostPoint += 3 + sameCount - 5;
+          lostPoint += 3 + sameCount - 5
         }
       }
     }
@@ -152,13 +154,13 @@ export class QRUtil {
     // LEVEL2
     for (let row = 0; row < moduleCount - 1; row += 1) {
       for (let col = 0; col < moduleCount - 1; col += 1) {
-        let count = 0;
-        if (qrcode.isDark(row, col)) count += 1;
-        if (qrcode.isDark(row + 1, col)) count += 1;
-        if (qrcode.isDark(row, col + 1)) count += 1;
-        if (qrcode.isDark(row + 1, col + 1)) count += 1;
+        let count = 0
+        if (qrcode.isDark(row, col)) count += 1
+        if (qrcode.isDark(row + 1, col)) count += 1
+        if (qrcode.isDark(row, col + 1)) count += 1
+        if (qrcode.isDark(row + 1, col + 1)) count += 1
         if (count == 0 || count == 4) {
-          lostPoint += 3;
+          lostPoint += 3
         }
       }
     }
@@ -175,7 +177,7 @@ export class QRUtil {
           !qrcode.isDark(row, col + 5) &&
           qrcode.isDark(row, col + 6)
         ) {
-          lostPoint += 40;
+          lostPoint += 40
         }
       }
     }
@@ -191,68 +193,68 @@ export class QRUtil {
           !qrcode.isDark(row + 5, col) &&
           qrcode.isDark(row + 6, col)
         ) {
-          lostPoint += 40;
+          lostPoint += 40
         }
       }
     }
 
     // LEVEL4
-    let darkCount = 0;
+    let darkCount = 0
 
     for (let col = 0; col < moduleCount; col += 1) {
       for (let row = 0; row < moduleCount; row += 1) {
         if (qrcode.isDark(row, col)) {
-          darkCount += 1;
+          darkCount += 1
         }
       }
     }
 
-    const ratio = Math.abs((100 * darkCount) / moduleCount / moduleCount - 50) / 5;
-    lostPoint += ratio * 10;
+    const ratio = Math.abs((100 * darkCount) / moduleCount / moduleCount - 50) / 5
+    lostPoint += ratio * 10
 
-    return lostPoint;
+    return lostPoint
   }
 }
 
 export class QRMath {
-  private static EXP_TABLE = new Array(256);
-  private static LOG_TABLE = new Array(256);
+  private static EXP_TABLE = new Array(256)
+  private static LOG_TABLE = new Array(256)
 
   static {
     // initialize tables
     for (let i = 0; i < 8; i += 1) {
-      this.EXP_TABLE[i] = 1 << i;
+      this.EXP_TABLE[i] = 1 << i
     }
     for (let i = 8; i < 256; i += 1) {
       this.EXP_TABLE[i] =
         this.EXP_TABLE[i - 4] ^
         this.EXP_TABLE[i - 5] ^
         this.EXP_TABLE[i - 6] ^
-        this.EXP_TABLE[i - 8];
+        this.EXP_TABLE[i - 8]
     }
     for (let i = 0; i < 255; i += 1) {
-      this.LOG_TABLE[this.EXP_TABLE[i]] = i;
+      this.LOG_TABLE[this.EXP_TABLE[i]] = i
     }
   }
 
   static glog(n: number): number {
     if (n < 1) {
-      throw new Error('glog(' + n + ')');
+      throw new Error('glog(' + n + ')')
     }
 
-    return this.LOG_TABLE[n];
+    return this.LOG_TABLE[n]
   }
 
   static gexp(n: number): number {
     while (n < 0) {
-      n += 255;
+      n += 255
     }
 
     while (n >= 256) {
-      n -= 255;
+      n -= 255
     }
 
-    return this.EXP_TABLE[n];
+    return this.EXP_TABLE[n]
   }
 }
 
@@ -502,56 +504,53 @@ export class QRRSBlock {
     [18, 75, 47, 31, 76, 48],
     [34, 54, 24, 34, 55, 25],
     [20, 45, 15, 61, 46, 16],
-  ];
+  ]
 
-  totalCount: number;
-  dataCount: number;
+  totalCount: number
+  dataCount: number
 
   constructor(totalCount: number, dataCount: number) {
-    this.totalCount = totalCount;
-    this.dataCount = dataCount;
+    this.totalCount = totalCount
+    this.dataCount = dataCount
   }
 
   private static getRsBlockTable(typeNumber: number, errorCorrectLevel: number): number[] {
     switch (errorCorrectLevel) {
       case 1: // L
-        return this.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+        return this.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0]
       case 0: // M
-        return this.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+        return this.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1]
       case 3: // Q
-        return this.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+        return this.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2]
       case 2: // H
-        return this.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+        return this.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3]
       default:
-        return undefined as any;
+        return undefined as any
     }
   }
 
   static getRSBlocks(typeNumber: number, errorCorrectLevel: number): QRRSBlock[] {
-    const rsBlock = this.getRsBlockTable(typeNumber, errorCorrectLevel);
+    const rsBlock = this.getRsBlockTable(typeNumber, errorCorrectLevel)
 
     if (typeof rsBlock == 'undefined') {
       throw new Error(
-        'bad rs block @ typeNumber:' +
-          typeNumber +
-          '/errorCorrectLevel:' +
-          errorCorrectLevel
-      );
+        'bad rs block @ typeNumber:' + typeNumber + '/errorCorrectLevel:' + errorCorrectLevel,
+      )
     }
 
-    const length = rsBlock.length / 3;
-    const list: QRRSBlock[] = [];
+    const length = rsBlock.length / 3
+    const list: QRRSBlock[] = []
 
     for (let i = 0; i < length; i += 1) {
-      const count = rsBlock[i * 3 + 0];
-      const totalCount = rsBlock[i * 3 + 1];
-      const dataCount = rsBlock[i * 3 + 2];
+      const count = rsBlock[i * 3 + 0]
+      const totalCount = rsBlock[i * 3 + 1]
+      const dataCount = rsBlock[i * 3 + 2]
 
       for (let j = 0; j < count; j += 1) {
-        list.push(new QRRSBlock(totalCount, dataCount));
+        list.push(new QRRSBlock(totalCount, dataCount))
       }
     }
 
-    return list;
+    return list
   }
-} 
+}

@@ -14,16 +14,8 @@ export type bytesOptions = {
   includeUnits?: boolean
   targetUnit?: string
 }
-export function bytesToHuman(
-  bytes: string,
-  options: bytesOptions = {},
-): string {
-  const {
-    useSI = false,
-    decimals = 2,
-    includeUnits = true,
-    targetUnit = null,
-  } = options
+export function bytesToHuman(bytes: string, options: bytesOptions = {}): string {
+  const { useSI = false, decimals = 2, includeUnits = true, targetUnit = null } = options
 
   const unit = useSI ? 1000 : 1024
   const units = useSI
@@ -53,9 +45,7 @@ export function bytesToHuman(
   const targetUnitIndex = units.indexOf(targetUnit)
 
   if (targetUnitIndex === -1) {
-    throw new Error(
-      `Invalid unit: ${targetUnit}. Valid units are: ${units.join(', ')}`,
-    )
+    throw new Error(`Invalid unit: ${targetUnit}. Valid units are: ${units.join(', ')}`)
   }
 
   // Convert bytes to the target unit

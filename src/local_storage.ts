@@ -27,11 +27,7 @@ export function getJSON(key: string, _default?: any): any {
   }
 }
 
-export function update(
-  key: string,
-  update: (current: any) => any,
-  broadcast: boolean = false,
-) {
+export function update(key: string, update: (current: any) => any, broadcast: boolean = false) {
   const prev = get(key)
   let value = update(prev)
   const v = value
@@ -71,10 +67,7 @@ const listeners = new Map<
   >
 >()
 
-export function listen(
-  key: string,
-  cb: (update: { key: string; value: any }) => void | el,
-) {
+export function listen(key: string, cb: (update: { key: string; value: any }) => void | el) {
   // Same-tab: existing CustomEvent listener
   const customListener: EventListener = (ev) => {
     const customEv = ev as CustomEvent
@@ -104,17 +97,12 @@ export function listen(
     }
   }
   if (!listeners.has(key)) listeners.set(key, new Map())
-  listeners
-    .get(key)!
-    .set(cb, { custom: customListener, storage: storageListener })
+  listeners.get(key)!.set(cb, { custom: customListener, storage: storageListener })
   document.addEventListener('@corvid/ls-update', customListener)
   window.addEventListener('storage', storageListener)
 }
 
-export function unlisten(
-  key: string,
-  cb: (update: { key: string; value: any }) => void | el,
-) {
+export function unlisten(key: string, cb: (update: { key: string; value: any }) => void | el) {
   const keyListeners = listeners.get(key)
   if (!keyListeners) return
   const listener = keyListeners.get(cb)

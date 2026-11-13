@@ -98,8 +98,9 @@ export class logger {
     // mock calls if level is none
     if (this.level === logLevel.none) {
       // prettier-ignore
-      ;['error', 'warn', 'info', 'debug', 'trace', 'log']
-        .forEach((methodName) => { (this as any)[methodName] = () => { } })
+      ;['error', 'warn', 'info', 'debug', 'trace', 'log'].forEach((methodName) => {
+        ;(this as any)[methodName] = () => {}
+      })
     }
   }
   error(...args: any[]) {

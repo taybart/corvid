@@ -34,10 +34,7 @@ export interface QRCode {
 }
 
 export class QR {
-  static render(
-    config: QRCodeConfig,
-    element: el | HTMLElement | HTMLCanvasElement,
-  ): void {
+  static render(config: QRCodeConfig, element: el | HTMLElement | HTMLCanvasElement): void {
     const settings = this.getDefaultSettings(config)
 
     if (element instanceof HTMLCanvasElement) {
@@ -85,12 +82,7 @@ export class QR {
         row -= quiet
         col -= quiet
 
-        if (
-          row < 0 ||
-          row >= qrModuleCount ||
-          col < 0 ||
-          col >= qrModuleCount
-        ) {
+        if (row < 0 || row >= qrModuleCount || col < 0 || col >= qrModuleCount) {
           return false
         }
         return qr.isDark(row, col)
@@ -132,12 +124,7 @@ export class QR {
   ): void {
     if (settings.background) {
       context.fillStyle = settings.background
-      context.fillRect(
-        settings.left,
-        settings.top,
-        settings.size,
-        settings.size,
-      )
+      context.fillRect(settings.left, settings.top, settings.size, settings.size)
     }
   }
 
@@ -224,9 +211,7 @@ export class QR {
     const rowB = row + 1
     const colL = col - 1
     const colR = col + 1
-    const radius = Math.floor(
-      Math.min(0.5, Math.max(0, settings.radius)) * width,
-    )
+    const radius = Math.floor(Math.min(0.5, Math.max(0, settings.radius)) * width)
     const center = isDark(row, col)
     const northwest = isDark(rowT, colL)
     const north = isDark(rowT, col)
@@ -271,11 +256,7 @@ export class QR {
     }
   }
 
-  private static drawModules(
-    qr: QRCode,
-    context: CanvasRenderingContext2D,
-    settings: any,
-  ): void {
+  private static drawModules(qr: QRCode, context: CanvasRenderingContext2D, settings: any): void {
     const moduleCount = qr.moduleCount
     const moduleSize = settings.size / moduleCount
 
@@ -294,10 +275,7 @@ export class QR {
     context.fill()
   }
 
-  private static setFill(
-    context: CanvasRenderingContext2D,
-    settings: any,
-  ): void {
+  private static setFill(context: CanvasRenderingContext2D, settings: any): void {
     const fill = settings.fill
     if (typeof fill === 'string') {
       context.fillStyle = fill
@@ -340,10 +318,7 @@ export class QR {
     context.fillStyle = gradient
   }
 
-  private static drawOnCanvas(
-    canvas: HTMLCanvasElement,
-    settings: any,
-  ): HTMLCanvasElement | null {
+  private static drawOnCanvas(canvas: HTMLCanvasElement, settings: any): HTMLCanvasElement | null {
     const qr = this.createMinQRCode(
       settings.text,
       settings.ecLevel,
@@ -370,10 +345,7 @@ export class QR {
     return this.drawOnCanvas(canvas, settings) || canvas
   }
 
-  private static renderToCanvas(
-    canvas: HTMLCanvasElement,
-    settings: any,
-  ): void {
+  private static renderToCanvas(canvas: HTMLCanvasElement, settings: any): void {
     if (canvas.width !== settings.size || canvas.height !== settings.size) {
       canvas.width = settings.size
       canvas.height = settings.size

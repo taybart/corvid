@@ -1,5 +1,7 @@
 import * as style from './style'
 import { logger, logLevel } from './utils'
+
+export { style }
 /****************
  *     DOM      *
  ***************/
@@ -38,12 +40,7 @@ export function on(event: string, cb: (ev: Event) => void) {
 }
 export function onKey(
   key: string,
-  cb: (ev: {
-    ctrl: boolean
-    alt: boolean
-    meta: boolean
-    shift: boolean
-  }) => void,
+  cb: (ev: { ctrl: boolean; alt: boolean; meta: boolean; shift: boolean }) => void,
   verbose = false,
 ) {
   const log = new logger(verbose ? logLevel.debug : logLevel.none, 'onKey')
@@ -80,9 +77,7 @@ export function registerElement(name: string, ctor: CustomElementConstructor) {
   const existing = customElements.get(name)
   if (existing) {
     if (existing !== ctor) {
-      throw new Error(
-        `custom element ${name} is already registered by ${existing.name}`,
-      )
+      throw new Error(`custom element ${name} is already registered by ${existing.name}`)
     }
     return
   }
@@ -128,7 +123,15 @@ export class el {
     }
     // prettier-ignore
     const {
-      query, element, tag, class: styleClass, style, id, content, parent, attrs,
+      query,
+      element,
+      tag,
+      class: styleClass,
+      style,
+      id,
+      content,
+      parent,
+      attrs,
     } = opts as elOpts
     if (query) {
       this.log.debug(`using query: ${query}`)
@@ -212,9 +215,7 @@ export class el {
     if ('innerHTML' in this.el) {
       return (this.el as { innerHTML: string }).innerHTML
     }
-    this.log.warn(
-      `element (${this.query}) does not contain value, returning empty string`,
-    )
+    this.log.warn(`element (${this.query}) does not contain value, returning empty string`)
     return ''
   }
   parent(parent: HTMLElement | el): this {
@@ -386,11 +387,7 @@ export class el {
   }
 
   /*** Events ***/
-  on(
-    event: string,
-    cb: (ev: Event) => void,
-    options?: AddEventListenerOptions | boolean,
-  ): this {
+  on(event: string, cb: (ev: Event) => void, options?: AddEventListenerOptions | boolean): this {
     if (!this.el) {
       throw new Error(`no element from query: ${this.query}`)
     }
@@ -439,19 +436,14 @@ export function create<T extends HTMLElement = HTMLElement>(
 ): T {
   const node = new el(opts, verbose).el
   if (!node) {
-    throw new Error(
-      `could not create element: ${opts.tag ?? opts.query ?? '?'}`,
-    )
+    throw new Error(`could not create element: ${opts.tag ?? opts.query ?? '?'}`)
   }
   return node as T
 }
 
 /*** component ***/
 
-export function registerComponents(
-  components: (typeof component)[],
-  verbose = false,
-) {
+export function registerComponents(components: (typeof component)[], verbose = false) {
   for (const c of components) {
     c.register(undefined, verbose)
   }
@@ -542,9 +534,7 @@ export class component extends HTMLElement {
   static register(tag?: string, verbose = false) {
     const name = tag ?? this.tag
     if (!name) {
-      throw new Error(
-        `${this.name}: nothing to register as, set \`static tag = 'x-...'\``,
-      )
+      throw new Error(`${this.name}: nothing to register as, set \`static tag = 'x-...'\``)
     }
     // a subclass with no `tag` of its own inherits its parent's, which would
     // otherwise silently no-op against the parent's registration
@@ -609,11 +599,7 @@ export class component extends HTMLElement {
   disconnectedCallback() {
     this.unmount()
   }
-  attributeChangedCallback(
-    name: string,
-    prev: string | null,
-    value: string | null,
-  ) {
+  attributeChangedCallback(name: string, prev: string | null, value: string | null) {
     if (prev === value) return
     if (!this.#mounted) {
       this.#pendingAttrs.push([name, value, prev])
@@ -633,10 +619,7 @@ export class component extends HTMLElement {
 export function interpolate(str: string, params: Object): string {
   let names = Object.keys(params).map((k) => `_${k}`)
   let vals = Object.values(params)
-  return new Function(
-    ...names,
-    `return \`${str.replace(/\$\{(\w*)\}/g, '${_$1}')}\`;`,
-  )(...vals)
+  return new Function(...names, `return \`${str.replace(/\$\{(\w*)\}/g, '${_$1}')}\`;`)(...vals)
 }
 
 export default { el, els, create, component, registerElement, ready, on, onKey }
