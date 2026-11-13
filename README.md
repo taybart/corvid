@@ -38,6 +38,15 @@ dom.ready(() => {
         parent: username,
     })
 
+    // text is set as textContent (content is innerHTML), so it's safe for user input
+    dom.create({ tag: 'span', class: 'comment', text: userInput, parent: username })
+    username.text('<not bold>')
+    // toggle a class, or force it on/off
+    username.toggleClass('error', hasError)
+
+    // listen on window (dom.on listens on document), both return a remover
+    const off = dom.onWindow('message', (ev) => console.log(ev.data))
+
     // listen for keys and check for modifiers
     dom.onKey('E', ({ ctrl, alt, meta, shift }) => {
         console.log('E pressed')

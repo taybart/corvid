@@ -54,6 +54,67 @@ describe('dom', () => {
   })
 })
 
+describe('text', () => {
+  test('create sets text without parsing it', () => {
+    const node = dom.create({ tag: 'span', text: '<b>not bold</b>' })
+    expect(node.textContent).toBe('<b>not bold</b>')
+    expect(node.querySelector('b')).toBeNull()
+  })
+
+  test('create sets empty text', () => {
+    const node = dom.create({ tag: 'span', text: '' })
+    expect(node.textContent).toBe('')
+  })
+
+  test('create rejects content and text together', () => {
+    expect(() => dom.create({ tag: 'span', content: 'a', text: 'b' })).toThrow(/pick one/)
+  })
+
+  test('el.text sets text without parsing it', () => {
+    const e = new dom.el({ tag: 'p' }).text('<i>x</i>')
+    expect(e.el!.textContent).toBe('<i>x</i>')
+    expect(e.el!.querySelector('i')).toBeNull()
+  })
+})
+
+describe('toggleClass', () => {
+  test('flips without force', () => {
+    const e = new dom.el({ tag: 'div' })
+    e.toggleClass('on')
+    expect(e.hasClass('on')).toBe(true)
+    e.toggleClass('on')
+    expect(e.hasClass('on')).toBe(false)
+  })
+
+  test('force adds or removes', () => {
+    const e = new dom.el({ tag: 'div' })
+    e.toggleClass('on', true).toggleClass('on', true)
+    expect(e.hasClass('on')).toBe(true)
+    e.toggleClass('on', false).toggleClass('on', false)
+    expect(e.hasClass('on')).toBe(false)
+  })
+})
+
+describe('onWindow', () => {
+  test('listens on window and removes', () => {
+    const cb = vi.fn()
+    const off = dom.onWindow('resize', cb)
+    window.dispatchEvent(new Event('resize'))
+    expect(cb).toHaveBeenCalledTimes(1)
+    off()
+    window.dispatchEvent(new Event('resize'))
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not hear document events', () => {
+    const cb = vi.fn()
+    const off = dom.onWindow('ping', cb)
+    document.dispatchEvent(new Event('ping')) // (doesn't bubble)
+    expect(cb).not.toHaveBeenCalled()
+    off()
+  })
+})
+
 describe('component', () => {
   test('register defines the tag and is idempotent', () => {
     class Widget extends dom.component {

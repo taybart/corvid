@@ -32,10 +32,27 @@ export function onBlur(cb: () => void) {
   })
 }
 
+/**
+ * Listen on document. Returns a function that removes the listener.
+ */
 export function on(event: string, cb: (ev: Event) => void) {
   document.addEventListener(event, cb)
   return () => {
     document.removeEventListener(event, cb)
+  }
+}
+/**
+ * Listen on window (ex. message, resize, popstate). Returns a function that
+ * removes the listener.
+ */
+export function onWindow(
+  event: string,
+  cb: (ev: Event) => void,
+  options?: AddEventListenerOptions | boolean,
+) {
+  window.addEventListener(event, cb, options)
+  return () => {
+    window.removeEventListener(event, cb, options)
   }
 }
 export function onKey(
@@ -89,7 +106,10 @@ export type elOpts = {
   element?: HTMLElement
   query?: string
   tag?: string
+  /** set as innerHTML */
   content?: any
+  /** set as textContent, so it's never parsed as html (ex. user input) */
+  text?: string
   class?: string | string[]
   style?: Object
   id?: string
@@ -130,9 +150,13 @@ export class el {
       style,
       id,
       content,
+      text,
       parent,
       attrs,
     } = opts as elOpts
+    if (content !== undefined && text !== undefined) {
+      throw new Error('content and text are both set, pick one (content is html, text is not)')
+    }
     if (query) {
       this.log.debug(`using query: ${query}`)
       this.query = query
@@ -171,6 +195,9 @@ export class el {
         this.log.debug(`setting content: ${content}`)
         this.el.innerHTML = content
       }
+      if (text !== undefined) {
+        this.el.textContent = text
+      }
       if (parent) {
         this.log.debug(`adding to parent`)
         let p: any = parent
@@ -188,15 +215,19 @@ export class el {
       }
     }
   }
+  // check() {
+  //   if (!this.el) {
+  //     throw new Error(`no element from query: ${this.query}`)
+  //   }
+  // }
   static query(query: string, verbose: boolean = false) {
     return new el(query, verbose)
   }
 
   /*** dom manipulation ***/
   value(update?: string): string | this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     if (update !== undefined) {
       if ('value' in this.el) {
         this.el.value = update
@@ -219,9 +250,8 @@ export class el {
     return ''
   }
   parent(parent: HTMLElement | el): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     parent.appendChild(this.el)
     return this
   }
@@ -232,9 +262,8 @@ export class el {
     return this.child(ch)
   }
   child(ch: HTMLElement | el | string): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     if (typeof ch === 'string') {
       this.el.append(ch)
     } else if (ch instanceof el) {
@@ -245,9 +274,8 @@ export class el {
     return this
   }
   prepend(ch: HTMLElement | el | string): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     if (typeof ch === 'string') {
       this.el.prepend(ch)
     } else if (ch instanceof el) {
@@ -267,9 +295,8 @@ export class el {
     return this
   }
   content(content: any, { text = false }: { text?: boolean } = {}): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     if (text) {
       this.el.textContent = content
     } else {
@@ -277,10 +304,16 @@ export class el {
     }
     return this
   }
+  /**
+   * Set the element's text (textContent), so it's never parsed as html. The
+   * same as content(text, { text: true }).
+   */
+  text(text: string): this {
+    return this.content(text, { text: true })
+  }
   html(content: string | HTMLElement | el): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     if (typeof content === 'string') {
       this.el.innerHTML = content
     } else if (content instanceof el) {
@@ -299,25 +332,22 @@ export class el {
     return this
   }
   attrs(attrs: Object): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     for (const [k, v] of Object.entries(attrs)) {
       this.el.setAttribute(k, v)
     }
     return this
   }
   attr(key: string, val: string): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     this.el.setAttribute(key, val)
     return this
   }
   removeAttr(key: string): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     this.el.removeAttribute(key)
     return this
   }
@@ -343,26 +373,23 @@ export class el {
     return this
   }
   hasClass(className: string) {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     return this.el.classList.contains(className)
   }
-  toggleClass(className: string): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
-    if (this.el.classList.contains(className)) {
-      this.el.classList.remove(className)
-    } else {
-      this.el.classList.add(className)
-    }
+  /**
+   * Flip a class, or with force, add it (true) or remove it (false), like
+   * classList.toggle.
+   */
+  toggleClass(className: string, force?: boolean): this {
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
+    this.el.classList.toggle(className, force)
     return this
   }
   addClass(className: string | string[]): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     if (typeof className === 'string') {
       this.el.classList.add(className)
     } else {
@@ -373,9 +400,8 @@ export class el {
     return this
   }
   removeClass(className: string | string[]): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     if (typeof className === 'string') {
       this.el.classList.remove(className)
     } else {
@@ -388,9 +414,8 @@ export class el {
 
   /*** Events ***/
   on(event: string, cb: (ev: Event) => void, options?: AddEventListenerOptions | boolean): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     if (!this.listeners[event]) {
       this.listeners[event] = []
     }
@@ -406,9 +431,8 @@ export class el {
     return this.on(event, cb, options)
   }
   removeListeners(event: string): this {
-    if (!this.el) {
-      throw new Error(`no element from query: ${this.query}`)
-    }
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
     if (!this.listeners[event]) {
       return this
     }
@@ -622,4 +646,4 @@ export function interpolate(str: string, params: Object): string {
   return new Function(...names, `return \`${str.replace(/\$\{(\w*)\}/g, '${_$1}')}\`;`)(...vals)
 }
 
-export default { el, els, create, component, registerElement, ready, on, onKey }
+export default { el, els, create, component, registerElement, ready, on, onWindow, onKey }
