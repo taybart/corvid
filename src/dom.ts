@@ -55,9 +55,20 @@ export function onWindow(
     window.removeEventListener(event, cb, options)
   }
 }
+/**
+ * Listen for a key on window. The callback gets the modifiers, and the event
+ * itself as `ev` (ex. to `ev.preventDefault()` a browser shortcut, or check
+ * `ev.target`). Returns a function that removes the listener.
+ */
 export function onKey(
   key: string,
-  cb: (ev: { ctrl: boolean; alt: boolean; meta: boolean; shift: boolean }) => void,
+  cb: (ev: {
+    ctrl: boolean
+    alt: boolean
+    meta: boolean
+    shift: boolean
+    ev: KeyboardEvent
+  }) => void,
   verbose = false,
 ) {
   const log = new logger(verbose ? logLevel.debug : logLevel.none, 'onKey')
@@ -69,6 +80,7 @@ export function onKey(
         alt: ev.altKey,
         meta: ev.metaKey,
         shift: ev.shiftKey,
+        ev,
       })
     }
   }
@@ -99,6 +111,13 @@ export function registerElement(name: string, ctor: CustomElementConstructor) {
     return
   }
   customElements.define(name, ctor)
+}
+
+// classNames splits class names given as a string ('a b', like the class
+// attribute) or a list, since classList.add throws on a name with a space
+function classNames(names: string | string[]): string[] {
+  const list = typeof names === 'string' ? [names] : names
+  return list.flatMap((n) => n.split(/\s+/)).filter(Boolean)
 }
 
 /*** element ***/
@@ -180,13 +199,7 @@ export class el {
         this.el.id = id
       }
       if (styleClass) {
-        if (typeof styleClass === 'string') {
-          this.el.classList.add(styleClass)
-        } else {
-          for (const sc of styleClass) {
-            this.el.classList.add(sc)
-          }
-        }
+        this.el.classList.add(...classNames(styleClass))
       }
       if (style) {
         this.style(style)
@@ -339,10 +352,35 @@ export class el {
     }
     return this
   }
-  attr(key: string, val: string): this {
+  /** get an attribute's value (null if it isn't set) */
+  attr(key: string): string | null
+  /** set an attribute */
+  attr(key: string, val: string): this
+  attr(key: string, val?: string): string | null | this {
     if (!this.el) throw new Error(`no element from query: ${this.query}`)
 
+    if (val === undefined) {
+      return this.el.getAttribute(key)
+    }
     this.el.setAttribute(key, val)
+    return this
+  }
+  /**
+   * get a data-* attribute's value (undefined if it isn't set), by its dataset
+   * name or its attribute name: data('wasmUrl') and data('wasm-url') are both
+   * data-wasm-url
+   */
+  data(key: string): string | undefined
+  /** set a data-* attribute */
+  data(key: string, val: string): this
+  data(key: string, val?: string): string | undefined | this {
+    if (!this.el) throw new Error(`no element from query: ${this.query}`)
+
+    const name = key.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
+    if (val === undefined) {
+      return this.el.dataset[name]
+    }
+    this.el.dataset[name] = val
     return this
   }
   removeAttr(key: string): this {
@@ -390,25 +428,13 @@ export class el {
   addClass(className: string | string[]): this {
     if (!this.el) throw new Error(`no element from query: ${this.query}`)
 
-    if (typeof className === 'string') {
-      this.el.classList.add(className)
-    } else {
-      for (const sc of className) {
-        this.el.classList.add(sc)
-      }
-    }
+    this.el.classList.add(...classNames(className))
     return this
   }
   removeClass(className: string | string[]): this {
     if (!this.el) throw new Error(`no element from query: ${this.query}`)
 
-    if (typeof className === 'string') {
-      this.el.classList.remove(className)
-    } else {
-      for (const sc of className) {
-        this.el.classList.remove(sc)
-      }
-    }
+    this.el.classList.remove(...classNames(className))
     return this
   }
 

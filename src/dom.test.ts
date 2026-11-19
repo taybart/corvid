@@ -382,3 +382,50 @@ describe('shadow components', () => {
     expect(document.adoptedStyleSheets.length).toBe(before)
   })
 })
+
+describe('fixes', () => {
+  test('onKey passes the event, so a shortcut can be prevented', () => {
+    let prevented = false
+    const off = dom.onKey('k', ({ meta, ev }) => {
+      expect(meta).toBe(true)
+      ev.preventDefault()
+      prevented = ev.defaultPrevented
+    })
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, cancelable: true }))
+    off()
+    expect(prevented).toBe(true)
+  })
+
+  test('class names can be space separated, like the class attribute', () => {
+    const node = dom.create({ tag: 'div', class: 'card  big' })
+    expect([...node.classList]).toEqual(['card', 'big'])
+
+    const el = new dom.el(node)
+    el.addClass('a b').addClass(['c d', 'e'])
+    expect([...node.classList]).toEqual(['card', 'big', 'a', 'b', 'c', 'd', 'e'])
+    el.removeClass('big a')
+    expect([...node.classList]).toEqual(['card', 'b', 'c', 'd', 'e'])
+  })
+})
+
+describe('attributes', () => {
+  test('attr gets (null when unset) and sets', () => {
+    const el = new dom.el(dom.create({ tag: 'a', attrs: { href: '/x' } }))
+    expect(el.attr('href')).toBe('/x')
+    expect(el.attr('title')).toBeNull()
+    expect(el.attr('title', 'hi').attr('href', '/y')).toBe(el) // (chains)
+    expect(el.attr('title')).toBe('hi')
+    expect(el.attr('href')).toBe('/y')
+  })
+
+  test('data gets (undefined when unset) and sets, by dataset or attribute name', () => {
+    const node = dom.create({ tag: 'div', attrs: { 'data-wasm-url': '/m.wasm?v=1' } })
+    const el = new dom.el(node)
+    expect(el.data('wasmUrl')).toBe('/m.wasm?v=1')
+    expect(el.data('wasm-url')).toBe('/m.wasm?v=1')
+    expect(el.data('missing')).toBeUndefined()
+    expect(el.data('theme', 'dark').data('page-size', '20')).toBe(el)
+    expect(node.getAttribute('data-theme')).toBe('dark')
+    expect(node.getAttribute('data-page-size')).toBe('20')
+  })
+})

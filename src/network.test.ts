@@ -58,4 +58,18 @@ describe('request.do', () => {
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(onUnauthorized).toHaveBeenCalledOnce()
   })
+
+  // A custom fetch is called unbound: the browser's fetch throws "Illegal
+  // invocation" when `this` isn't the window, so `fetch: window.fetch` (or any
+  // fetch that cares about `this`) has to be called w/o the options as `this`.
+  test('a custom fetch is called without the options as this', async () => {
+    let self: unknown = 'not called'
+    const fetch = vi.fn(function (this: unknown) {
+      self = this
+      return Promise.resolve(new Response('ok', { status: 200 }))
+    })
+    const client = new request({ url: 'https://example.test', fetch })
+    await client.do({ path: '/x' })
+    expect(self).toBeUndefined()
+  })
 })

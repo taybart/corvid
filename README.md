@@ -41,15 +41,22 @@ dom.ready(() => {
     // text is set as textContent (content is innerHTML), so it's safe for user input
     dom.create({ tag: 'span', class: 'comment', text: userInput, parent: username })
     username.text('<not bold>')
+    // get / set attributes (get: null when unset), and data-* by either name
+    const href = link.attr('href')
+    link.attr('title', 'home').attr('href', '/')
+    const wasm = page.data('wasmUrl') // or page.data('wasm-url'): data-wasm-url
+    page.data('theme', 'dark')
     // toggle a class, or force it on/off
     username.toggleClass('error', hasError)
 
     // listen on window (dom.on listens on document), both return a remover
     const off = dom.onWindow('message', (ev) => console.log(ev.data))
 
-    // listen for keys and check for modifiers
-    dom.onKey('E', ({ ctrl, alt, meta, shift }) => {
-        console.log('E pressed')
+    // listen for keys and check for modifiers (ev is the KeyboardEvent)
+    dom.onKey('k', ({ ctrl, alt, meta, shift, ev }) => {
+        if (!meta && !ctrl) return
+        ev.preventDefault() // ex. keep the browser from using ⌘K / Ctrl+K
+        console.log('⌘K / Ctrl+K pressed')
     })
 })
 

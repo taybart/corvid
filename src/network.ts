@@ -197,14 +197,11 @@ export class request {
       override,
     })
     this.log.debug(`${this.opts.method} ${url}`)
-    // FIXME: this does not work: Failed to execute 'fetch' on 'Window': Illegal invocation
-    // const res = await this.opts.fetch!(url, options as RequestInit)
-    let res
-    if (this.opts.fetch) {
-      res = await this.opts.fetch(url, options as RequestInit)
-    } else {
-      res = await fetch(url, options as RequestInit)
-    }
+    // (called unbound: `this.opts.fetch(...)` would run it w/ `this` as the
+    // options, and the browser's fetch throws "Illegal invocation" unless
+    // `this` is the window, so `fetch: window.fetch` wouldn't work)
+    const fetcher = this.opts.fetch ?? fetch
+    const res = await fetcher(url, options as RequestInit)
     const expect = override.expect || this.opts.expect
     if (res.status !== expect) {
       const body = await res.text()
